@@ -9,12 +9,9 @@ This document details the environment settings, local setup procedures, build sc
 ### 1.1 Backend Configuration
 ```bash
 cd backend
-python -m venv .venv
-# Activate virtual environment
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
+npm install
+npx prisma migrate dev
+npm run dev
 ```
 
 ### 1.2 Frontend Configuration
@@ -36,7 +33,7 @@ docker compose up --build
 
 ### Day 1: Project Setup
 *   Configure base repository structure.
-*   Setup `docker-compose.yml` defining PostgreSQL, FastAPI backend, and Next.js frontend containers.
+*   Setup `docker-compose.yml` defining PostgreSQL, Express backend, and React (Vite) frontend containers.
 *   Define environment files.
 
 ### Day 2: Data Generation
@@ -45,7 +42,7 @@ docker compose up --build
 *   Load database tables and seed demo user profiles in PostgreSQL.
 
 ### Day 3: Deterministic Analytics Engine
-*   Write SQL and Pandas scripts for forecast baselines.
+*   Write SQL and TypeScript scripts for forecast baselines.
 *   Implement anomaly detection, materiality thresholds, and driver contribution bridge models.
 *   Set up confidence and driver ranking engines.
 
@@ -75,17 +72,17 @@ docker compose up --build
 
 ### Backend (`.env`)
 ```env
-ENVIRONMENT=local
-DEBUG=true
+NODE_ENV=local
+PORT=8000
 APP_NAME=KPI Intelligence Engine
 API_V1_PREFIX=/api/v1
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/kpi_intelligence
-CORS_ORIGINS=http://localhost:3000
-AUTH_SECRET_KEY=change-me
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kpi_intelligence
+CORS_ORIGINS=http://localhost:5173
+JWT_SECRET=change-me
 ACCESS_TOKEN_EXPIRE_MINUTES=60
-LLM_PROVIDER=openai
+LLM_PROVIDER=anthropic
 LLM_API_KEY=your_api_key_here
-LLM_MODEL=gpt-4o
+LLM_MODEL=claude-sonnet-5
 LLM_BASE_URL=
 LLM_TEMPERATURE=0.2
 LLM_MAX_TOKENS=1200
@@ -96,9 +93,9 @@ SEED_DEMO_USERS=true
 
 ### Frontend (`.env`)
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_APP_NAME=KPI Intelligence Engine
-NEXT_PUBLIC_ENVIRONMENT=local
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_APP_NAME=KPI Intelligence Engine
+VITE_ENVIRONMENT=local
 ```
 
 ---
@@ -107,6 +104,6 @@ NEXT_PUBLIC_ENVIRONMENT=local
 
 The recommended hosting stack is structured as follows:
 *   **Frontend**: Hosted on Vercel.
-*   **Backend**: Hosted on Render, Railway, or Fly.io (FastAPI Docker container).
+*   **Backend**: Hosted on Render, Railway, or Fly.io (Express/Node Docker container).
 *   **Database**: Managed Serverless PostgreSQL (Neon or Supabase).
 *   **LLM API**: OpenAI, Anthropic, Gemini, or self-hosted Ollama.

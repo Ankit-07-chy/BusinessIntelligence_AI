@@ -69,7 +69,7 @@ Monitors LLM API efficiency, costs, and token volumes.
 *   `latency_ms` (INTEGER): API response delay.
 *   `estimated_cost_usd` (NUMERIC): Price computed for the call.
 *   `cache_hit` (BOOLEAN): Flag indicating if prompt cache was hit.
-*   `validation_passed` (BOOLEAN): Status indicating if Pydantic parsing was successful.
+*   `validation_passed` (BOOLEAN): Status indicating if Zod schema parsing was successful.
 *   `error_message` (TEXT): Error message if LLM returned an invalid structure.
 
 ### Cost Calculation Equation

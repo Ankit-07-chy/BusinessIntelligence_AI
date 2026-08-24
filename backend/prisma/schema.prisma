@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Auth -------------------------------------------------------------
+
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  displayName   String   @map("display_name")
+  passwordHash  String   @map("password_hash")
+  persona       String
+  allowedRegions String[] @map("allowed_regions")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+// --- Dimensions ---------------------------------------------------------
+
+model DimProduct {
+  productId String  @id @default(uuid()) @map("product_id")
+  sku       String  @unique
+  name      String
+  category  String
+  price     Decimal
+  cost      Decimal
+
+  sales     FactSales[]
+  inventory FactInventory[]
+
+  @@map("dim_product")
+}
+
+model DimStore {
+  storeId     String @id @default(uuid()) @map("store_id")
+  name        String
+  region      String
+  channelType String @map("channel_type")
+
+  sales     FactSales[]
+  inventory FactInventory[]
+
+  @@map("dim_store")
+}
+
+model DimCampaign {
+  campaignId String @id @default(uuid()) @map("campaign_id")
+  name       String
+  channel    String
+
+  marketingSpend FactMarketingSpend[]
+
+  @@map("dim_campaign")
+}
+
+model DimCalendar {
+  calendarDate DateTime @id @map("calendar_date") @db.Date
+  weekOfYear   Int      @map("week_of_year")
+  month        Int
+  quarter      Int
+  isHoliday    Boolean  @map("is_holiday")
+
+  @@map("dim_calendar")
+}
+
+// --- Facts ----------------------------------------------------------------
+
+model FactSales {
+  id              String   @id @default(uuid())
+  productId       String   @map("product_id")
+  storeId         String   @map("store_id")
+  saleDate        DateTime @map("sale_date") @db.Date
+  grossRevenue    Decimal  @map("gross_revenue")
+  discountAmount  Decimal  @map("discount_amount")
+  returnsAmount   Decimal  @map("returns_amount")
+  costOfGoodsSold Decimal  @map("cost_of_goods_sold")
+  unitsSold       Int      @map("units_sold")
+
+  product DimProduct @relation(fields: [productId], references: [productId])
+  store   DimStore   @relation(fields: [storeId], references: [storeId])
+
+  @@unique([productId, storeId, saleDate])
+  @@map("fact_sales")
+}
+
+model FactInventory {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  storeId       String   @map("store_id")
+  inventoryDate DateTime @map("inventory_date") @db.Date
+  unitsOnHand   Int      @map("units_on_hand")
+  isStockout    Boolean  @map("is_stockout")
+
+  product DimProduct @relation(fields: [productId], references: [productId])
+  store   DimStore   @relation(fields: [storeId], references: [storeId])
+
+  @@unique([productId, storeId, inventoryDate])
+  @@map("fact_inventory")
+}
+
+model FactMarketingSpend {
+  id           String   @id @default(uuid())
+  campaignId   String   @map("campaign_id")
+  spendDate    DateTime @map("spend_date") @db.Date
+  spendAmount  Decimal  @map("spend_amount")
+  clicks       Int
+  impressions  Int
+  newCustomers Int      @map("new_customers")
+
+  campaign DimCampaign @relation(fields: [campaignId], references: [campaignId])
+
+  @@unique([campaignId, spendDate])
+  @@map("fact_marketing_spend")
+}
+
+model FactWebTraffic {
+  id          String   @id @default(uuid())
+  channel     String
+  device      String
+  region      String
+  trafficDate DateTime @map("traffic_date") @db.Date
+  sessions    Int
+  orders      Int
+
+  @@unique([channel, device, region, trafficDate])
+  @@map("fact_web_traffic")
+}
+
+model FactShipment {
+  id                    String   @id @default(uuid())
+  orderLineId           String   @map("order_line_id")
+  carrier               String
+  region                String
+  fulfillmentCenter     String   @map("fulfillment_center")
+  shipmentDate          DateTime @map("shipment_date") @db.Date
+  deliveredOnTimeInFull Boolean  @map("delivered_on_time_in_full")
+
+  @@map("fact_shipments")
+}
+
+// --- Governance -------------------------------------------------------
+
+model KpiDefinition {
+  kpiId              String @id @map("kpi_id")
+  name               String
+  owner              String
+  businessDefinition String @map("business_definition")
+  formula            String
+  grain              String
+  refreshCadence     String @map("refresh_cadence")
+  version            String
+
+  anomalies Anomaly[]
+
+  @@map("kpi_definitions")
+}
+
+model SourceStatus {
+  sourceName            String   @id @map("source_name")
+  lastSuccessfulRefresh DateTime @map("last_successful_refresh")
+  completenessScore     Decimal  @map("completeness_score")
+  isActive              Boolean  @map("is_active")
+
+  @@map("source_status")
+}
+
+// --- Insight & Analytical Output --------------------------------------
+
+model Anomaly {
+  anomalyId        String   @id @default(uuid()) @map("anomaly_id")
+  kpiId            String   @map("kpi_id")
+  period           String
+  actualValue      Decimal  @map("actual_value")
+  forecastValue    Decimal  @map("forecast_value")
+  delta            Decimal
+  zScore           Decimal  @map("z_score")
+  materialityScore Decimal  @map("materiality_score")
+  dataQualityScore Decimal  @map("data_quality_score")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  kpi                   KpiDefinition          @relation(fields: [kpiId], references: [kpiId])
+  driverContributions   DriverContribution[]
+  explanations          Explanation[]
+  actionRecommendations ActionRecommendation[]
+  feedback              Feedback[]
+
+  @@map("anomalies")
+}
+
+model DriverContribution {
+  contributionId  String  @id @default(uuid()) @map("contribution_id")
+  anomalyId       String  @map("anomaly_id")
+  driverId        String  @map("driver_id")
+  estimatedImpact Decimal @map("estimated_impact")
+  confidenceScore Decimal @map("confidence_score")
+
+  anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
+
+  @@map("driver_contributions")
+}
+
+model Explanation {
+  explanationId     String   @id @default(uuid()) @map("explanation_id")
+  anomalyId         String   @map("anomaly_id")
+  personaId         String   @map("persona_id")
+  narrativeText     String   @map("narrative_text")
+  evidenceCitations Json     @map("evidence_citations")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
+
+  @@map("explanations")
+}
+
+model ActionRecommendation {
+  actionId       String  @id @default(uuid()) @map("action_id")
+  anomalyId      String  @map("anomaly_id")
+  actionName     String  @map("action_name")
+  ownerPersona   String  @map("owner_persona")
+  expectedImpact Decimal @map("expected_impact")
+  monitoringPlan String  @map("monitoring_plan")
+  status         String  @default("pending")
+
+  anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
+
+  @@map("action_recommendations")
+}
+
+// --- Learning & Feedback ------------------------------------------------
+
+model Feedback {
+  feedbackId       String   @id @default(uuid()) @map("feedback_id")
+  insightId        String   @map("insight_id")
+  userId           String   @map("user_id")
+  persona          String
+  helpful          Boolean
+  rootCauseCorrect String   @map("root_cause_correct")
+  acceptedAction   Boolean  @map("accepted_action")
+  correctedDriver  String?  @map("corrected_driver")
+  comments         String?
+  timestamp        DateTime @default(now())
+
+  anomaly Anomaly @relation(fields: [insightId], references: [anomalyId])
+
+  @@map("feedback")
+}
+
+model TelemetryRequest {
+  requestId    String   @id @map("request_id")
+  userId       String?  @map("user_id")
+  persona      String?
+  method       String
+  path         String
+  statusCode   Int      @map("status_code")
+  latencyMs    Int      @map("latency_ms")
+  errorMessage String?  @map("error_message")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("telemetry_requests")
+}
+
+model TelemetryLlmCall {
+  llmCallId        String   @id @default(uuid()) @map("llm_call_id")
+  requestId        String   @map("request_id")
+  modelName        String   @map("model_name")
+  provider         String
+  inputTokens      Int      @map("input_tokens")
+  outputTokens     Int      @map("output_tokens")
+  latencyMs        Int      @map("latency_ms")
+  estimatedCostUsd Decimal  @map("estimated_cost_usd")
+  validationPassed Boolean  @map("validation_passed")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("telemetry_llm_calls")
+}

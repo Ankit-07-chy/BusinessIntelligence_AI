@@ -1,0 +1,27 @@
+kpi_id: net_revenue
+name: Net Revenue
+owner: Finance
+business_definition: Total sales after discounts and returns
+formula: SUM(gross_revenue - discount_amount - returns_amount)
+primary_source: fact_sales
+grain: product-store-day
+refresh_cadence: daily
+dimensions:
+  - region
+  - store
+  - product
+  - category
+thresholds:
+  absolute_drop_usd: 100000
+  percent_drop: 5
+drivers:
+  - stockout_rate
+  - marketing_spend
+  - price_change
+  - discount_rate
+  - seasonality
+access_policy:
+  row_level: region
+  column_level:
+    margin: finance_only
+version: 1.0.0

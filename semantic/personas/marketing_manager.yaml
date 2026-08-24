@@ -1,0 +1,14 @@
+persona_id: marketing_manager
+name: Marketing Manager
+focus:
+  - campaign_performance
+  - traffic
+  - spend_efficiency
+  - conversion
+  - cac
+level_of_detail: campaign_level
+narrative_strategy: performance_driven_optimization_focused
+preferred_actions:
+  - restore_budget
+  - run_incrementality_test
+access_scope: global_marketing_access

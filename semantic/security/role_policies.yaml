@@ -1,0 +1,20 @@
+role_policies:
+  cfo:
+    allowed_regions: ["ALL"]
+    restricted_columns: []
+    blocked_domains: ["executive_compensation", "pii"]
+
+  supply_chain_manager:
+    allowed_regions: ["EU", "US"]
+    restricted_columns: ["gross_margin", "cogs", "discount_amount"]
+    blocked_domains: ["executive_compensation", "pii", "ma_planning"]
+
+  marketing_manager:
+    allowed_regions: ["ALL"]
+    restricted_columns: ["gross_margin", "cogs", "otif"]
+    blocked_domains: ["executive_compensation", "pii", "legal"]
+
+  analyst:
+    allowed_regions: ["ALL"]
+    restricted_columns: []
+    blocked_domains: ["executive_compensation", "pii", "ma_planning", "legal"]

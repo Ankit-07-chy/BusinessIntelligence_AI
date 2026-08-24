@@ -1,0 +1,24 @@
+kpi_id: conversion_rate
+name: Online Conversion Rate
+owner: Digital Product
+business_definition: Orders divided by traffic sessions
+formula: SUM(orders) / SUM(sessions)
+primary_source: fact_web_traffic
+grain: channel-device-day
+refresh_cadence: hourly
+dimensions:
+  - channel
+  - device
+  - region
+thresholds:
+  absolute_drop_usd: 0
+  percent_drop: 2
+drivers:
+  - traffic_quality
+  - checkout_errors
+  - product_availability
+  - promotion_relevance
+access_policy:
+  row_level: region
+  column_level: {}
+version: 1.0.0

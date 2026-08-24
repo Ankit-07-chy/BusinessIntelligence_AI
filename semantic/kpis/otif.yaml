@@ -1,0 +1,23 @@
+kpi_id: otif
+name: On-Time In-Full
+owner: Logistics
+business_definition: On-Time In-Full fulfillment rate of order lines
+formula: SUM(delivered_on_time_in_full) / SUM(total_shipments)
+primary_source: fact_shipments
+grain: order-line-day
+refresh_cadence: daily
+dimensions:
+  - carrier
+  - region
+  - fulfillment_center
+thresholds:
+  absolute_drop_usd: 0
+  percent_drop: 4
+drivers:
+  - carrier_delays
+  - warehouse_spikes
+  - stockout_rate
+access_policy:
+  row_level: region
+  column_level: {}
+version: 1.0.0

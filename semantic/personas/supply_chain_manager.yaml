@@ -1,0 +1,14 @@
+persona_id: supply_chain_manager
+name: Supply Chain Manager
+focus:
+  - stockouts
+  - inventory
+  - replenishment
+  - store_sku_detail
+  - fulfillment
+level_of_detail: sku_store_level
+narrative_strategy: operational_detail_oriented_tactical
+preferred_actions:
+  - expedite_purchase_order
+  - reallocate_inventory
+access_scope: regional_store_focus

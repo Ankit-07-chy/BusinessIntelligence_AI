@@ -1,0 +1,11 @@
+incident_id: incident_002_low_confidence
+name: Low Confidence (Missing or Delayed Sources)
+context: >
+  A critical source, such as marketing spend history, has a lag of 12 days
+  or has missing values.
+kpi_id: net_revenue
+expected:
+  confidence_score_below: 0.5
+  status: abstain
+  narrative_generated: false
+  clarification_question_present: true

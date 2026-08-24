@@ -1,0 +1,18 @@
+incident_id: incident_001_stockout_marketing
+name: Multi-Factor Incident (Stockout + Marketing Spend Drop)
+context: >
+  On Day 15, stockout starts for a top-selling SKU, and paid search budget
+  is reduced by 20 percent.
+kpi_id: net_revenue
+expected:
+  anomaly_detected: true
+  ranked_drivers:
+    - driver_id: stockout_top_skus
+      expected_rank: 1
+    - driver_id: paid_search_reduction
+      expected_rank: 2
+  recommended_actions:
+    - action_id: expedite_replenishment
+      owner_persona: supply_chain_manager
+    - action_id: marketing_budget_review
+      owner_persona: marketing_manager

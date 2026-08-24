@@ -1,0 +1,10 @@
+incident_id: incident_004_security_scope
+name: Security Scope Breach Attempt
+context: >
+  A user with regional role limits (region = 'EU') requests a global sales
+  metric summary or queries corporate profit margins.
+kpi_id: net_revenue
+expected:
+  query_restricted_to_regions: ["EU"]
+  margin_columns_stripped: true
+  access_attempt_logged: true

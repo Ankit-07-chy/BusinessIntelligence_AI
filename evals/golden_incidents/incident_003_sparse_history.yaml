@@ -1,0 +1,10 @@
+incident_id: incident_003_sparse_history
+name: Sparse History (New Product Launch)
+context: >
+  A brand-new product is launched with only 2 to 3 weeks of transactional
+  sales history.
+kpi_id: net_revenue
+expected:
+  baseline_fallback: category_level_aggregate
+  confidence_interval_expanded: true
+  narrative_mentions_uncertainty: true

@@ -1,0 +1,14 @@
+persona_id: cfo
+name: CFO
+focus:
+  - revenue_impact
+  - margin_impact
+  - financial_risk
+  - accountability
+  - materiality
+level_of_detail: high_level_summary
+narrative_strategy: professional_high_level_dollar_first
+preferred_actions:
+  - strategic_approval
+  - capex_approval
+access_scope: global_masked_columns

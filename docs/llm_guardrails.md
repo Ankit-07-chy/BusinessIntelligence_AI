@@ -92,7 +92,7 @@ To prevent hallucinations, data leakage, and mathematical drift, the LLM must fo
 7.  **Tone Alignment**: Adapt vocabulary, tone, and granularity to the user's role persona.
 8.  **Column Protection**: Do not mention masked fields or attributes (e.g. margin metrics if the role is Supply Chain).
 9.  **No Code Execution**: Do not run database queries or code block commands in responses.
-10. **Structured Response Contract**: Return responses conforming strictly to the defined structured Pydantic schema.
+10. **Structured Response Contract**: Return responses conforming strictly to the defined structured Zod schema.
 
 ---
 

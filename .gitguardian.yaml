@@ -1,0 +1,27 @@
+version: 2
+
+# Suppresses known false-positive secret matches for this scaffold.
+# Everything flagged here is an intentional local-dev/demo placeholder,
+# never a real credential (see README.md / docs/deployment.md).
+secret:
+  ignored-paths:
+    # Example env files only ever contain placeholder values by design.
+    - "*.env.example"
+    - "**/.env.example"
+    - "docker-compose.yml"
+    - ".github/workflows/ci.yml"
+    # Documentation that mirrors the same example values.
+    - "docs/deployment.md"
+    - "project_knowledge.md"
+
+  ignored-matches:
+    # Demo login password seeded for all demo personas (backend/prisma/seed.ts)
+    # and defaulted in the login form (frontend/src/pages/LoginPage.tsx).
+    - name: demo-seed-password
+      match: 0ead2060b65992dca4769af601a1b3a35ef38cfad2c2c465bb160ea764157c5d
+    # Placeholder JWT secret used only for local/dev/CI.
+    - name: placeholder-jwt-secret
+      match: e2186dbdb1bb4193608605e84f33208765b5693b55edd4f730a719a100eeea6f
+    # Default local PostgreSQL credentials (postgres:postgres), never used outside Docker Compose/CI.
+    - name: local-postgres-credentials
+      match: 19db114cfb38fc97237d90d2b8b094f23a44121b5f8ec46c07cf1277c3450a30

@@ -10,11 +10,11 @@ This document provides a comprehensive description of the analytical and archite
 User
   |
   v
-Next.js Frontend (TypeScript, Tailwind CSS, shadcn/ui, Recharts)
+React Frontend (Vite, TypeScript, Tailwind CSS, shadcn/ui, Recharts)
   |
   | HTTPS / JSON
   v
-FastAPI Backend (Python 3.11+, SQLAlchemy, Alembic, Pydantic)
+Express Backend (Node.js/TypeScript, Prisma, Zod)
   |
   |----------------------------------|
   |                                  |
@@ -22,12 +22,12 @@ FastAPI Backend (Python 3.11+, SQLAlchemy, Alembic, Pydantic)
 Deterministic Analytics Engine     LLM Orchestration Layer
   |                                  |
   v                                  v
-PostgreSQL (Neon/Supabase)         Evidence Pack + Guardrails (Instructor)
+PostgreSQL (Neon/Supabase)         Evidence Pack + Guardrails (Zod schemas)
 ```
 
 ### End-to-End Request Flow
 1. **User Request**: The user logs in (generating a JWT token detailing their identity, persona, and scopes) and requests the dashboard or asks a question.
-2. **Gateway Verification**: The Next.js frontend calls the FastAPI backend. The API validates the JWT, extracts security claims, and invokes security filters.
+2. **Gateway Verification**: The React frontend calls the Express backend. The API validates the JWT, extracts security claims, and invokes security filters.
 3. **Database Fetching**: Database repositories query PostgreSQL with Row-Level Security (RLS) and Column-Level Security (CLS) boundaries enforced directly.
 4. **Deterministic Analysis**: The Analytics Engine calculates the baseline, residuals, materiality, driver contributions, and confidence score.
 5. **Abstention Valuation**: The engine evaluates the confidence score. If it falls below `0.5`, the system halts narrative generation and outputs a structured abstention response.
@@ -42,7 +42,7 @@ The Quantitative Truth Layer is completely independent of the LLM. It calculates
 
 ### 2.1 Baseline Forecast
 $$expected\_value = \text{Average of same weekday in previous 4 weeks} + trend\_adjustment + seasonality\_adjustment$$
-*Note: The prototype analytics layer can also support Statsmodels ETS or Prophet algorithms.*
+*Note: The prototype analytics layer can also be extended with a lightweight ETS-style model (e.g. via `simple-statistics`) if the naive baseline proves insufficient.*
 
 ### 2.2 Anomaly Detection
 $$residual = actual\_value - expected\_value$$

@@ -28,8 +28,8 @@ Below is the directory map of the documentation files:
 sequenceDiagram
     autonumber
     actor User as Business User
-    participant FE as Next.js Frontend
-    participant BE as FastAPI Backend
+    participant FE as React Frontend
+    participant BE as Express Backend
     participant AE as Analytics Engine
     participant DB as PostgreSQL Database
     participant LLM as LLM Orchestration

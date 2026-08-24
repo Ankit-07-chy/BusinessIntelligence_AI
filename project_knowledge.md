@@ -8,8 +8,8 @@ The system detects material KPI movements, explains likely root causes, generate
 
 The system is built as a hosted full-stack application:
 
-- Frontend: **Next.js + TypeScript**
-- Backend: **FastAPI + Python**
+- Frontend: **React (Vite) + TypeScript**
+- Backend: **Express.js + Node.js (TypeScript)**
 - Database: **PostgreSQL**
 - Analytics: Deterministic SQL, statistical models, contribution analysis, and confidence scoring
 - LLM: Used only for orchestration, narrative generation, and intent understanding
@@ -381,11 +381,12 @@ Preferred output:
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js |
+| Framework | React (Vite) |
 | Language | TypeScript |
+| Routing | React Router |
 | Styling | Tailwind CSS |
 | UI Components | shadcn/ui |
-| Charts | Recharts or Apache ECharts |
+| Charts | Recharts |
 | API Fetching | TanStack Query |
 | Validation | Zod |
 | Icons | Lucide React |
@@ -394,35 +395,34 @@ Preferred output:
 
 | Layer | Technology |
 |---|---|
-| Framework | FastAPI |
-| Language | Python 3.11+ |
-| ORM | SQLAlchemy |
-| Migrations | Alembic |
-| Validation | Pydantic |
-| Config | pydantic-settings |
-| Auth | JWT-based demo auth |
-| HTTP Client | httpx |
-| Logging | structlog |
-| Retry | tenacity |
-| Testing | pytest |
+| Framework | Express.js |
+| Language | Node.js (TypeScript) |
+| ORM | Prisma |
+| Migrations | Prisma Migrate |
+| Validation | Zod |
+| Config | dotenv + Zod-validated env schema |
+| Auth | JWT-based demo auth (jsonwebtoken + bcrypt) |
+| HTTP Client | axios |
+| Logging | pino |
+| Retry | p-retry |
+| Testing | Vitest + Supertest |
 
 ### Database
 
 | Layer | Technology |
 |---|---|
 | Primary Database | PostgreSQL |
-| Local Analytics Optional | DuckDB |
-| Migrations | Alembic |
-| Seed Data | Python scripts |
+| ORM / Migrations | Prisma |
+| Seed Data | TypeScript scripts (tsx) |
 
 ### Analytics
 
 | Layer | Technology |
 |---|---|
-| Data Processing | Pandas or Polars |
-| Forecasting | Statsmodels or Prophet |
+| Data Processing | Native TypeScript (formulas are simple weighted sums / ratios — no dataframe library needed) |
+| Forecasting | Custom TS baseline (4-week average + trend); `simple-statistics` optional for later ETS-style models |
 | Anomaly Detection | Custom residual / z-score logic |
-| Contribution Analysis | Deterministic Python/SQL |
+| Contribution Analysis | Deterministic TypeScript/SQL |
 | Causal Inference | Simple control-group comparison |
 | Confidence Scoring | Custom rules |
 
@@ -430,9 +430,9 @@ Preferred output:
 
 | Layer | Technology |
 |---|---|
-| LLM Provider | OpenAI-compatible API, Anthropic, Gemini, or Ollama |
-| Structured Output | Instructor |
-| Schema Validation | Pydantic |
+| LLM Provider | Anthropic Claude (primary), OpenAI-compatible / Gemini / Ollama as swappable alternatives |
+| Structured Output | Provider tool-use / function-calling forced schema |
+| Schema Validation | Zod (+ `zod-to-json-schema` for tool schemas) |
 | Prompt Templates | Markdown or YAML |
 | Guardrails | Evidence-only generation |
 
@@ -496,13 +496,13 @@ kpi-intelligence/
 │
 ├── scripts/
 │   ├── bootstrap.sh
-│   ├── generate_synthetic_data.py
-│   ├── load_data_to_db.py
-│   ├── create_demo_users.py
-│   ├── run_anomaly_detection.py
-│   ├── run_driver_analysis.py
-│   ├── run_evaluation.py
-│   └── reset_db.py
+│   ├── generateSyntheticData.ts
+│   ├── loadDataToDb.ts
+│   ├── createDemoUsers.ts
+│   ├── runAnomalyDetection.ts
+│   ├── runDriverAnalysis.ts
+│   ├── runEvaluation.ts
+│   └── resetDb.ts
 │
 ├── semantic/
 │   ├── kpis/
@@ -535,176 +535,139 @@ kpi-intelligence/
 │       └── column_policies.yaml
 │
 ├── backend/
-│   ├── pyproject.toml
-│   ├── requirements.txt
-│   ├── alembic.ini
+│   ├── package.json
+│   ├── tsconfig.json
 │   ├── Dockerfile
 │   ├── .env.example
 │   │
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── config.py
-│   │   ├── dependencies.py
-│   │   ├── exceptions.py
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   ├── seed.ts
+│   │   └── migrations/
+│   │       └── .gitkeep
+│   │
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── app.ts
+│   │   ├── config/
+│   │   │   └── env.ts
 │   │   │
-│   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   ├── router.py
+│   │   ├── routes/
+│   │   │   ├── index.ts
 │   │   │   └── v1/
-│   │   │       ├── __init__.py
-│   │   │       ├── health.py
-│   │   │       ├── auth.py
-│   │   │       ├── users.py
-│   │   │       ├── kpis.py
-│   │   │       ├── anomalies.py
-│   │   │       ├── explanations.py
-│   │   │       ├── actions.py
-│   │   │       ├── chat.py
-│   │   │       ├── personas.py
-│   │   │       ├── feedback.py
-│   │   │       ├── telemetry.py
-│   │   │       ├── security.py
-│   │   │       └── admin.py
+│   │   │       ├── health.ts
+│   │   │       ├── auth.ts
+│   │   │       ├── users.ts
+│   │   │       ├── kpis.ts
+│   │   │       ├── anomalies.ts
+│   │   │       ├── explanations.ts
+│   │   │       ├── actions.ts
+│   │   │       ├── chat.ts
+│   │   │       ├── personas.ts
+│   │   │       ├── feedback.ts
+│   │   │       ├── telemetry.ts
+│   │   │       ├── security.ts
+│   │   │       └── admin.ts
 │   │   │
-│   │   ├── core/
-│   │   │   ├── __init__.py
-│   │   │   ├── security.py
-│   │   │   ├── jwt.py
-│   │   │   ├── logging.py
-│   │   │   ├── telemetry.py
-│   │   │   ├── cache.py
-│   │   │   ├── rate_limit.py
-│   │   │   ├── retry.py
-│   │   │   └── request_context.py
+│   │   ├── middleware/
+│   │   │   ├── auth.ts
+│   │   │   ├── errorHandler.ts
+│   │   │   ├── requestContext.ts
+│   │   │   ├── rateLimit.ts
+│   │   │   └── retry.ts
 │   │   │
 │   │   ├── db/
-│   │   │   ├── __init__.py
-│   │   │   ├── session.py
-│   │   │   ├── base.py
+│   │   │   ├── prismaClient.ts
 │   │   │   └── repositories/
-│   │   │       ├── __init__.py
-│   │   │       ├── base_repository.py
-│   │   │       ├── user_repository.py
-│   │   │       ├── kpi_repository.py
-│   │   │       ├── sales_repository.py
-│   │   │       ├── inventory_repository.py
-│   │   │       ├── marketing_repository.py
-│   │   │       ├── web_repository.py
-│   │   │       ├── shipment_repository.py
-│   │   │       ├── anomaly_repository.py
-│   │   │       ├── explanation_repository.py
-│   │   │       ├── action_repository.py
-│   │   │       ├── feedback_repository.py
-│   │   │       ├── telemetry_repository.py
-│   │   │       └── source_status_repository.py
-│   │   │
-│   │   ├── models/
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py
-│   │   │   ├── user.py
-│   │   │   ├── role.py
-│   │   │   ├── kpi_definition.py
-│   │   │   ├── sales.py
-│   │   │   ├── inventory.py
-│   │   │   ├── marketing.py
-│   │   │   ├── web_traffic.py
-│   │   │   ├── shipment.py
-│   │   │   ├── anomaly.py
-│   │   │   ├── explanation.py
-│   │   │   ├── driver_contribution.py
-│   │   │   ├── action_recommendation.py
-│   │   │   ├── feedback.py
-│   │   │   ├── telemetry.py
-│   │   │   └── source_status.py
+│   │   │       ├── baseRepository.ts
+│   │   │       ├── userRepository.ts
+│   │   │       ├── kpiRepository.ts
+│   │   │       ├── salesRepository.ts
+│   │   │       ├── inventoryRepository.ts
+│   │   │       ├── marketingRepository.ts
+│   │   │       ├── webRepository.ts
+│   │   │       ├── shipmentRepository.ts
+│   │   │       ├── anomalyRepository.ts
+│   │   │       ├── explanationRepository.ts
+│   │   │       ├── actionRepository.ts
+│   │   │       ├── feedbackRepository.ts
+│   │   │       ├── telemetryRepository.ts
+│   │   │       └── sourceStatusRepository.ts
 │   │   │
 │   │   ├── schemas/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth.py
-│   │   │   ├── user.py
-│   │   │   ├── kpi.py
-│   │   │   ├── anomaly.py
-│   │   │   ├── explanation.py
-│   │   │   ├── evidence.py
-│   │   │   ├── driver.py
-│   │   │   ├── action.py
-│   │   │   ├── chat.py
-│   │   │   ├── persona.py
-│   │   │   ├── feedback.py
-│   │   │   ├── telemetry.py
-│   │   │   └── security.py
+│   │   │   ├── auth.ts
+│   │   │   ├── user.ts
+│   │   │   ├── kpi.ts
+│   │   │   ├── anomaly.ts
+│   │   │   ├── explanation.ts
+│   │   │   ├── evidence.ts
+│   │   │   ├── driver.ts
+│   │   │   ├── action.ts
+│   │   │   ├── chat.ts
+│   │   │   ├── persona.ts
+│   │   │   ├── feedback.ts
+│   │   │   ├── telemetry.ts
+│   │   │   └── security.ts
 │   │   │
 │   │   ├── semantic/
-│   │   │   ├── __init__.py
-│   │   │   ├── loader.py
-│   │   │   ├── validator.py
-│   │   │   ├── registry.py
-│   │   │   ├── kpi_contract.py
-│   │   │   ├── persona_contract.py
-│   │   │   └── access_policy.py
+│   │   │   ├── loader.ts
+│   │   │   ├── validator.ts
+│   │   │   ├── registry.ts
+│   │   │   ├── kpiContract.ts
+│   │   │   ├── personaContract.ts
+│   │   │   └── accessPolicy.ts
 │   │   │
 │   │   ├── analytics/
-│   │   │   ├── __init__.py
-│   │   │   ├── baseline.py
-│   │   │   ├── forecasting.py
-│   │   │   ├── anomaly_detection.py
-│   │   │   ├── materiality.py
-│   │   │   ├── data_quality.py
-│   │   │   ├── contribution.py
-│   │   │   ├── causal.py
-│   │   │   ├── confidence.py
-│   │   │   ├── ranking.py
-│   │   │   ├── abstention.py
-│   │   │   └── reconciliation.py
+│   │   │   ├── baseline.ts
+│   │   │   ├── forecasting.ts
+│   │   │   ├── anomalyDetection.ts
+│   │   │   ├── materiality.ts
+│   │   │   ├── dataQuality.ts
+│   │   │   ├── contribution.ts
+│   │   │   ├── causal.ts
+│   │   │   ├── confidence.ts
+│   │   │   ├── ranking.ts
+│   │   │   ├── abstention.ts
+│   │   │   └── reconciliation.ts
 │   │   │
 │   │   ├── llm/
-│   │   │   ├── __init__.py
-│   │   │   ├── client.py
-│   │   │   ├── provider.py
-│   │   │   ├── schemas.py
-│   │   │   ├── prompts.py
-│   │   │   ├── evidence_pack.py
-│   │   │   ├── guardrails.py
-│   │   │   ├── cost_estimator.py
-│   │   │   ├── persona_narrative.py
-│   │   │   └── chat_agent.py
+│   │   │   ├── client.ts
+│   │   │   ├── provider.ts
+│   │   │   ├── schemas.ts
+│   │   │   ├── prompts.ts
+│   │   │   ├── evidencePack.ts
+│   │   │   ├── guardrails.ts
+│   │   │   ├── costEstimator.ts
+│   │   │   ├── personaNarrative.ts
+│   │   │   └── chatAgent.ts
 │   │   │
 │   │   ├── services/
-│   │   │   ├── __init__.py
-│   │   │   ├── auth_service.py
-│   │   │   ├── user_service.py
-│   │   │   ├── kpi_service.py
-│   │   │   ├── anomaly_service.py
-│   │   │   ├── explanation_service.py
-│   │   │   ├── action_service.py
-│   │   │   ├── persona_service.py
-│   │   │   ├── chat_service.py
-│   │   │   ├── feedback_service.py
-│   │   │   ├── telemetry_service.py
-│   │   │   ├── security_service.py
-│   │   │   └── source_status_service.py
+│   │   │   ├── authService.ts
+│   │   │   ├── userService.ts
+│   │   │   ├── kpiService.ts
+│   │   │   ├── anomalyService.ts
+│   │   │   ├── explanationService.ts
+│   │   │   ├── actionService.ts
+│   │   │   ├── personaService.ts
+│   │   │   ├── chatService.ts
+│   │   │   ├── feedbackService.ts
+│   │   │   ├── telemetryService.ts
+│   │   │   ├── securityService.ts
+│   │   │   └── sourceStatusService.ts
 │   │   │
 │   │   ├── workers/
-│   │   │   ├── __init__.py
-│   │   │   ├── scheduler.py
-│   │   │   ├── refresh_data.py
-│   │   │   ├── detect_anomalies.py
-│   │   │   ├── generate_insights.py
-│   │   │   └── evaluate_feedback.py
+│   │   │   ├── scheduler.ts
+│   │   │   ├── refreshData.ts
+│   │   │   ├── detectAnomalies.ts
+│   │   │   ├── generateInsights.ts
+│   │   │   └── evaluateFeedback.ts
 │   │   │
 │   │   └── utils/
-│   │       ├── __init__.py
-│   │       ├── dates.py
-│   │       ├── money.py
-│   │       ├── ids.py
-│   │       ├── hashing.py
-│   │       └── formatting.py
-│   │
-│   ├── alembic/
-│   │   ├── env.py
-│   │   ├── script.py.mako
-│   │   └── versions/
-│   │       └── .gitkeep
+│   │       ├── dates.ts
+│   │       ├── money.ts
+│   │       ├── ids.ts
+│   │       ├── hashing.ts
+│   │       └── formatting.ts
 │   │
 │   ├── prompts/
 │   │   ├── system/
@@ -718,32 +681,32 @@ kpi-intelligence/
 │   │       └── analyst.md
 │   │
 │   └── tests/
-│       ├── __init__.py
-│       ├── conftest.py
+│       ├── setup.ts
 │       ├── unit/
-│       │   ├── test_contribution.py
-│       │   ├── test_materiality.py
-│       │   ├── test_confidence.py
-│       │   ├── test_semantic_loader.py
-│       │   └── test_guardrails.py
+│       │   ├── contribution.test.ts
+│       │   ├── materiality.test.ts
+│       │   ├── confidence.test.ts
+│       │   ├── semanticLoader.test.ts
+│       │   └── guardrails.test.ts
 │       ├── integration/
-│       │   ├── test_auth.py
-│       │   ├── test_kpis.py
-│       │   ├── test_anomalies.py
-│       │   ├── test_explanations.py
-│       │   ├── test_feedback.py
-│       │   └── test_security.py
+│       │   ├── auth.test.ts
+│       │   ├── kpis.test.ts
+│       │   ├── anomalies.test.ts
+│       │   ├── explanations.test.ts
+│       │   ├── feedback.test.ts
+│       │   └── security.test.ts
 │       └── evals/
-│           ├── test_golden_incidents.py
-│           └── test_llm_faithfulness.py
+│           ├── goldenIncidents.test.ts
+│           └── llmFaithfulness.test.ts
 │
 ├── frontend/
 │   ├── package.json
 │   ├── package-lock.json
 │   ├── tsconfig.json
-│   ├── next.config.mjs
+│   ├── vite.config.ts
 │   ├── tailwind.config.ts
 │   ├── postcss.config.mjs
+│   ├── index.html
 │   ├── .env.example
 │   ├── Dockerfile
 │   ├── vercel.json
@@ -753,34 +716,24 @@ kpi-intelligence/
 │   │   └── favicon.ico
 │   │
 │   └── src/
-│       ├── app/
-│       │   ├── layout.tsx
-│       │   ├── page.tsx
-│       │   ├── globals.css
-│       │   ├── login/
-│       │   │   └── page.tsx
-│       │   ├── dashboard/
-│       │   │   ├── page.tsx
-│       │   │   └── loading.tsx
-│       │   ├── insights/
-│       │   │   ├── page.tsx
-│       │   │   └── [id]/
-│       │   │       └── page.tsx
-│       │   ├── chat/
-│       │   │   └── page.tsx
-│       │   ├── personas/
-│       │   │   └── page.tsx
-│       │   ├── actions/
-│       │   │   └── page.tsx
-│       │   ├── feedback/
-│       │   │   └── page.tsx
-│       │   ├── telemetry/
-│       │   │   └── page.tsx
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── router.tsx
+│       ├── index.css
+│       │
+│       ├── pages/
+│       │   ├── LoginPage.tsx
+│       │   ├── DashboardPage.tsx
+│       │   ├── InsightsPage.tsx
+│       │   ├── InsightDetailPage.tsx
+│       │   ├── ChatPage.tsx
+│       │   ├── PersonasPage.tsx
+│       │   ├── ActionsPage.tsx
+│       │   ├── FeedbackPage.tsx
+│       │   ├── TelemetryPage.tsx
 │       │   └── admin/
-│       │       ├── security/
-│       │       │   └── page.tsx
-│       │       └── users/
-│       │           └── page.tsx
+│       │       ├── SecurityPage.tsx
+│       │       └── UsersPage.tsx
 │       │
 │       ├── components/
 │       │   ├── layout/
@@ -856,11 +809,11 @@ kpi-intelligence/
 User
   |
   v
-Next.js Frontend
+React Frontend
   |
   | HTTPS / JSON
   v
-FastAPI Backend
+Express Backend
   |
   |----------------------------------|
   |                                  |
@@ -874,7 +827,7 @@ PostgreSQL                         Evidence Pack + Guardrails
 ### Request Flow
 
 1. User opens dashboard or asks a question.
-2. Frontend calls FastAPI.
+2. Frontend calls Express.
 3. Backend authenticates the user.
 4. Security filters are applied.
 5. KPI data is fetched from PostgreSQL.
@@ -996,8 +949,7 @@ expected_value =
 Optional:
 
 ```text
-Statsmodels ETS
-Prophet
+simple-statistics (ETS-style smoothing)
 ```
 
 ### 15.2 Anomaly Detection
@@ -1751,11 +1703,9 @@ Backend:
 
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn app.main:app --reload --port 8000
+npm install
+npx prisma migrate dev
+npm run dev
 ```
 
 Frontend:
@@ -1795,20 +1745,20 @@ Backup demo video recorded.
 ### Backend
 
 ```env
-ENVIRONMENT=local
-DEBUG=true
+NODE_ENV=local
+PORT=8000
 
 APP_NAME=KPI Intelligence Engine
 API_V1_PREFIX=/api/v1
 
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/kpi_intelligence
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/kpi_intelligence
 
-CORS_ORIGINS=http://localhost:3000
+CORS_ORIGINS=http://localhost:5173
 
-AUTH_SECRET_KEY=change-me
+JWT_SECRET=change-me
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-LLM_PROVIDER=openai
+LLM_PROVIDER=anthropic
 LLM_API_KEY=
 LLM_MODEL=
 LLM_BASE_URL=
@@ -1824,9 +1774,9 @@ SEED_DEMO_USERS=true
 ### Frontend
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
-NEXT_PUBLIC_APP_NAME=KPI Intelligence Engine
-NEXT_PUBLIC_ENVIRONMENT=local
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_APP_NAME=KPI Intelligence Engine
+VITE_ENVIRONMENT=local
 ```
 
 ---
@@ -1839,8 +1789,8 @@ NEXT_PUBLIC_ENVIRONMENT=local
 Create repository.
 Create folder structure.
 Set up Docker Compose.
-Set up FastAPI skeleton.
-Set up Next.js skeleton.
+Set up Express skeleton.
+Set up React (Vite) skeleton.
 Create environment files.
 ```
 
@@ -1936,7 +1886,7 @@ Evaluation scripts
 Responsible for:
 
 ```text
-Next.js frontend
+React frontend
 API integration
 Dashboard UI
 Insight detail page

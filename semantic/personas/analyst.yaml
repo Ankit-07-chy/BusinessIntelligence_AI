@@ -1,0 +1,14 @@
+persona_id: analyst
+name: Analyst
+focus:
+  - evidence
+  - methodology
+  - lineage
+  - confidence
+  - alternative_hypotheses
+level_of_detail: raw_logs_and_methodology
+narrative_strategy: mathematical_analytical_transparent
+preferred_actions:
+  - calibration
+  - manual_adjustment
+access_scope: full_structural_view

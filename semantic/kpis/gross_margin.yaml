@@ -1,0 +1,26 @@
+kpi_id: gross_margin
+name: Gross Margin
+owner: Finance
+business_definition: Revenue minus cost of goods sold
+formula: SUM(gross_revenue - discount_amount - returns_amount) - SUM(cost_of_goods_sold)
+primary_source: fact_sales
+grain: product-store-day
+refresh_cadence: daily
+dimensions:
+  - region
+  - store
+  - product
+  - category
+thresholds:
+  absolute_drop_usd: 50000
+  percent_drop: 3
+drivers:
+  - discount_rate
+  - product_mix_shift
+  - cost_changes
+  - returns_volume
+access_policy:
+  row_level: region
+  column_level:
+    margin: finance_only
+version: 1.0.0

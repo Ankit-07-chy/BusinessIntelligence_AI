@@ -1,0 +1,22 @@
+kpi_id: cac
+name: Customer Acquisition Cost
+owner: Growth Marketing
+business_definition: Marketing spend divided by newly acquired customers
+formula: SUM(marketing_spend) / SUM(new_customers)
+primary_source: fact_marketing_spend
+grain: campaign-day
+refresh_cadence: weekly
+dimensions:
+  - channel
+  - campaign
+thresholds:
+  absolute_drop_usd: 0
+  percent_drop: 10
+drivers:
+  - campaign_bidding_efficiency
+  - paid_traffic_mix
+  - brand_search_volume
+access_policy:
+  row_level: region
+  column_level: {}
+version: 1.0.0

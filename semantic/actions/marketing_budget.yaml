@@ -1,0 +1,7 @@
+driver_id: paid_search_reduction
+lever: marketing_budget
+action: Restore paid search budget to baseline and run an incrementality test to confirm the response
+owner_persona: marketing_manager
+expected_impact_range: [80000, 150000]
+confidence: medium
+monitoring_plan: Track daily paid-search spend, sessions, and conversion rate for 5 days after budget restoration

@@ -1,6 +1,5 @@
 import type { BaselineResult, TimeseriesPoint } from "./types.js";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MIN_SAME_WEEKDAY_POINTS = 2;
 
 function toMap(history: TimeseriesPoint[]): Map<string, number> {

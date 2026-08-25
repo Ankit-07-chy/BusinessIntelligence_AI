@@ -14,7 +14,7 @@ interface TimeseriesOptions {
   to?: Date;
 }
 
-function bucketByDate(rows: { date: Date }[], valueOf: (row: any) => number) {
+function bucketByDate<T extends { date: Date }>(rows: T[], valueOf: (row: T) => number) {
   const byDate = new Map<string, number>();
   for (const row of rows) {
     const key = row.date.toISOString().slice(0, 10);
@@ -25,7 +25,11 @@ function bucketByDate(rows: { date: Date }[], valueOf: (row: any) => number) {
     .map(([date, value]) => ({ date, value }));
 }
 
-function bucketRatioByDate(rows: { date: Date }[], numeratorOf: (row: any) => number, denominatorOf: (row: any) => number) {
+function bucketRatioByDate<T extends { date: Date }>(
+  rows: T[],
+  numeratorOf: (row: T) => number,
+  denominatorOf: (row: T) => number,
+) {
   const numerators = new Map<string, number>();
   const denominators = new Map<string, number>();
   for (const row of rows) {

@@ -3,6 +3,7 @@ dist/
 build/
 .env
 .env.local
+.venv
 *.log
 .DS_Store
 Thumbs.db

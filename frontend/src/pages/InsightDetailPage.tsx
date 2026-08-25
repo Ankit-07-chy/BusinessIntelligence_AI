@@ -1,14 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
+import { useAuth } from "../hooks/useAuth";
 import { ConfidenceBadge } from "../components/insights/ConfidenceBadge";
 import { ContributionWaterfall } from "../components/insights/ContributionWaterfall";
 import { DriverList } from "../components/insights/DriverList";
 import { EvidenceCard } from "../components/insights/EvidenceCard";
+import { PersonaNarrativeTabs } from "../components/insights/PersonaNarrativeTabs";
+import { LineagePanel } from "../components/insights/LineagePanel";
+import { ActionPlan } from "../components/insights/ActionPlan";
+import { FeedbackPanel } from "../components/feedback/FeedbackPanel";
 import type { AnomalyDetail } from "../lib/types";
 
 export function InsightDetailPage() {
   const { id } = useParams();
+  const { user } = useAuth();
 
   const anomalyQuery = useQuery({
     queryKey: ["anomaly", id],
@@ -19,11 +25,12 @@ export function InsightDetailPage() {
   if (anomalyQuery.isLoading) {
     return <p className="text-sm text-slate-500">Loading insight…</p>;
   }
-  if (anomalyQuery.isError || !anomalyQuery.data) {
+  if (anomalyQuery.isError || !anomalyQuery.data || !id) {
     return <p className="text-sm text-red-600">Anomaly not found.</p>;
   }
 
   const anomaly = anomalyQuery.data;
+  const driverOptions = anomaly.driverContributions.map((driver) => driver.driverId);
 
   return (
     <div className="space-y-6">
@@ -49,6 +56,31 @@ export function InsightDetailPage() {
         <div className="mt-3">
           <DriverList drivers={anomaly.driverContributions} />
         </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-slate-900">Explanation</h3>
+        <div className="mt-3">
+          <PersonaNarrativeTabs anomalyId={id} defaultPersona={user?.persona} />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-slate-900">Evidence lineage</h3>
+        <div className="mt-3">
+          <LineagePanel anomalyId={id} />
+        </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-slate-900">Recommended actions</h3>
+        <div className="mt-3">
+          <ActionPlan anomalyId={id} />
+        </div>
+      </section>
+
+      <section>
+        <FeedbackPanel anomalyId={id} driverOptions={driverOptions} />
       </section>
     </div>
   );

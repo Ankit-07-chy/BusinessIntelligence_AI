@@ -1,0 +1,7 @@
+driver_id: fulfillment_delay
+lever: fulfillment
+action: Reassign affected order lines to an alternate fulfillment center or carrier
+owner_persona: supply_chain_manager
+expected_impact_range: [30000, 90000]
+confidence: medium
+monitoring_plan: Track on-time-in-full rate by fulfillment center and carrier daily for 5 days

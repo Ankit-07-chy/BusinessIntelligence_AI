@@ -57,7 +57,7 @@ async function identifyNetRevenueDrivers(
   totalKpiChange: number,
   dataQualityScore: number,
   freshnessScore: number,
-): Promise<Array<{ driverId: string; estimatedImpact: number; confidenceScore: number }>> {
+): Promise<Array<{ driverId: string; estimatedImpact: number; confidenceScore: number; method: string }>> {
   const candidates = (
     await Promise.all([getStockoutDriverCandidate(prisma, targetDate), getPaidSearchDriverCandidate(prisma, targetDate)])
   ).filter((candidate): candidate is DriverCandidate => candidate !== null);
@@ -93,7 +93,12 @@ async function identifyNetRevenueDrivers(
 
   return ranked.map((r) => {
     const original = scored.find((s) => s.driverId === r.driverId)!;
-    return { driverId: r.driverId, estimatedImpact: original.estimatedImpact, confidenceScore: original.confidenceScore };
+    return {
+      driverId: r.driverId,
+      estimatedImpact: original.estimatedImpact,
+      confidenceScore: original.confidenceScore,
+      method: original.method,
+    };
   });
 }
 
@@ -174,6 +179,7 @@ async function detectAnomaliesForKpi(prisma: PrismaClient, kpiId: string): Promi
                   driverId: d.driverId,
                   estimatedImpact: d.estimatedImpact,
                   confidenceScore: d.confidenceScore,
+                  method: d.method,
                 })),
               },
             }
@@ -278,6 +284,7 @@ export async function getAnomalyDetail(anomalyId: string, prisma: PrismaClient =
       contribution: computeDriverContribution({ estimatedImpact, totalKpiChange: deltaNum }),
       rank: r.rank,
       driverScore: r.driverScore,
+      method: original.method,
     };
   });
 

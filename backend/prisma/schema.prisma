@@ -200,6 +200,7 @@ model DriverContribution {
   driverId        String  @map("driver_id")
   estimatedImpact Decimal @map("estimated_impact")
   confidenceScore Decimal @map("confidence_score")
+  method          String?
 
   anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
 
@@ -207,26 +208,34 @@ model DriverContribution {
 }
 
 model Explanation {
-  explanationId     String   @id @default(uuid()) @map("explanation_id")
-  anomalyId         String   @map("anomaly_id")
-  personaId         String   @map("persona_id")
-  narrativeText     String   @map("narrative_text")
-  evidenceCitations Json     @map("evidence_citations")
-  createdAt         DateTime @default(now()) @map("created_at")
+  explanationId      String   @id @default(uuid()) @map("explanation_id")
+  anomalyId          String   @map("anomaly_id")
+  personaId          String   @map("persona_id")
+  narrativeText      String   @map("narrative_text")
+  evidenceCitations  Json     @map("evidence_citations")
+  // Full structured LLM response contract (status, confidence, primary_drivers,
+  // uncertainties, recommended_actions, clarification_question) per docs/llm_guardrails.md.
+  structuredResponse Json     @map("structured_response")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
 
+  @@unique([anomalyId, personaId])
   @@map("explanations")
 }
 
 model ActionRecommendation {
-  actionId       String  @id @default(uuid()) @map("action_id")
-  anomalyId      String  @map("anomaly_id")
-  actionName     String  @map("action_name")
-  ownerPersona   String  @map("owner_persona")
-  expectedImpact Decimal @map("expected_impact")
-  monitoringPlan String  @map("monitoring_plan")
-  status         String  @default("pending")
+  actionId       String   @id @default(uuid()) @map("action_id")
+  anomalyId      String   @map("anomaly_id")
+  driverId       String?  @map("driver_id")
+  lever          String?
+  actionName     String   @map("action_name")
+  ownerPersona   String   @map("owner_persona")
+  expectedImpact Decimal  @map("expected_impact")
+  confidence     Decimal?
+  monitoringPlan String   @map("monitoring_plan")
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   anomaly Anomaly @relation(fields: [anomalyId], references: [anomalyId])
 

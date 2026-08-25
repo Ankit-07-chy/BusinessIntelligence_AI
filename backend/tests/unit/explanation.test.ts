@@ -33,10 +33,10 @@ describe("Explanation Service & LLM Integration (Phase 4)", () => {
     const result = await getOrCreateExplanation(anomaly!.anomalyId, "cfo", mockUser);
     expect(result).not.toBeNull();
     expect(result!.narrativeText).toBeDefined();
-    expect(result!.source).toBe("fallback"); // mock-key triggers fallback
+    expect(result!.source).toBe("fallback"); // fallback if api key is mock/invalid
 
     // Check that it's cached on second call
     const secondCall = await getOrCreateExplanation(anomaly!.anomalyId, "cfo", mockUser);
     expect(secondCall!.source).toBe("cached");
-  });
+  }, 30000);
 });

@@ -28,7 +28,7 @@ export async function buildEvidencePackForAnomaly(
   user: AuthTokenPayload,
   prisma: PrismaClient = defaultPrisma,
 ): Promise<EvidencePackContext | null> {
-  const anomaly = await getAnomalyDetail(anomalyId, prisma);
+  const anomaly = await getAnomalyDetail(anomalyId, user, prisma);
   if (!anomaly) return null;
 
   const policy = getEffectivePolicy(user);

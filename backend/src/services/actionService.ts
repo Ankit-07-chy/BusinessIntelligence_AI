@@ -7,7 +7,7 @@ const CONFIDENCE_LABEL_TO_SCORE: Record<string, number> = { high: 0.9, medium: 0
 
 /** Generates any missing ActionRecommendation rows for an anomaly's drivers, idempotently. */
 export async function ensureActionsForAnomaly(anomalyId: string, prisma: PrismaClient = defaultPrisma) {
-  const anomaly = await getAnomalyDetail(anomalyId, prisma);
+  const anomaly = await getAnomalyDetail(anomalyId, undefined, prisma);
   if (!anomaly) return [];
 
   const existing = await prisma.actionRecommendation.findMany({ where: { anomalyId } });

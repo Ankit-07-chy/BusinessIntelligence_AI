@@ -10,6 +10,8 @@ import { shouldAbstain } from "../analytics/abstention.js";
 import { prisma as defaultPrisma } from "../db/prismaClient.js";
 import { getKpiTimeseries } from "./kpiService.js";
 import { getPaidSearchDriverCandidate, getStockoutDriverCandidate, type DriverCandidate } from "./netRevenueDrivers.js";
+import type { AuthTokenPayload } from "../schemas/auth.js";
+import { getEffectivePolicy, isColumnRestricted } from "./securityPolicy.js";
 
 // computeBaseline only needs 2 same-weekday points (14 days) to produce a
 // same-weekday-trend baseline, so detection can start there rather than
@@ -216,13 +218,21 @@ function anomalyConfidence(driverContributions: Array<{ confidenceScore: unknown
   return Math.max(...driverContributions.map((d) => Number(d.confidenceScore)));
 }
 
-export async function listAnomalies(options: { sortBy?: AnomalySortBy } = {}, prisma: PrismaClient = defaultPrisma) {
+export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: AuthTokenPayload } = {}, prisma: PrismaClient = defaultPrisma) {
+  const policy = options.user ? getEffectivePolicy(options.user) : null;
   const anomalies = await prisma.anomaly.findMany({
     include: { kpi: true, driverContributions: true },
     orderBy: { createdAt: "desc" },
   });
 
-  const rows = anomalies.map((anomaly) => {
+  const filteredAnomalies = anomalies.filter((anomaly) => {
+    if (policy && isColumnRestricted(policy, anomaly.kpiId)) {
+      return false;
+    }
+    return true;
+  });
+
+  const rows = filteredAnomalies.map((anomaly) => {
     const confidenceScore = anomalyConfidence(anomaly.driverContributions);
     return {
       anomalyId: anomaly.anomalyId,
@@ -247,12 +257,17 @@ export async function listAnomalies(options: { sortBy?: AnomalySortBy } = {}, pr
   return rows;
 }
 
-export async function getAnomalyDetail(anomalyId: string, prisma: PrismaClient = defaultPrisma) {
+export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayload, prisma: PrismaClient = defaultPrisma) {
   const anomaly = await prisma.anomaly.findUnique({
     where: { anomalyId },
     include: { kpi: true, driverContributions: true },
   });
   if (!anomaly) return null;
+
+  const policy = user ? getEffectivePolicy(user) : null;
+  if (policy && isColumnRestricted(policy, anomaly.kpiId)) {
+    return null;
+  }
 
   const deltaNum = Number(anomaly.delta);
   const safeDelta = deltaNum === 0 ? 1 : deltaNum;

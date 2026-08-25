@@ -53,6 +53,7 @@ model DimCampaign {
   campaignId String @id @default(uuid()) @map("campaign_id")
   name       String
   channel    String
+  region     String
 
   marketingSpend FactMarketingSpend[]
 

@@ -1,10 +1,18 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.js";
-import { notImplemented } from "../../utils/notImplemented.js";
+import { getAnomalyDetail, listAnomalies, type AnomalySortBy } from "../../services/anomalyService.js";
 
 export const anomaliesRouter = Router();
 
 anomaliesRouter.use(requireAuth);
 
-anomaliesRouter.get("/anomalies", (_req, res) => notImplemented(res, "Anomaly detection"));
-anomaliesRouter.get("/anomalies/:anomalyId", (_req, res) => notImplemented(res, "Anomaly detail lookup"));
+anomaliesRouter.get("/anomalies", async (req, res) => {
+  const sortBy = req.query.sortBy === "confidence" ? "confidence" : ("materiality" as AnomalySortBy);
+  res.json(await listAnomalies({ sortBy }));
+});
+
+anomaliesRouter.get("/anomalies/:anomalyId", async (req, res) => {
+  const detail = await getAnomalyDetail(req.params.anomalyId);
+  if (!detail) return res.status(404).json({ error: "Anomaly not found" });
+  res.json(detail);
+});

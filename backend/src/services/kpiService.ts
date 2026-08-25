@@ -108,10 +108,15 @@ async function otifTimeseries(options: TimeseriesOptions) {
 }
 
 async function cacTimeseries(options: TimeseriesOptions) {
-  // fact_marketing_spend/dim_campaign carry no region column in this schema, so
-  // CAC cannot be region-scoped yet — it is always computed across all campaigns.
+  const regionFilter = options.allowedRegions.includes("ALL")
+    ? {}
+    : { campaign: { region: { in: options.allowedRegions } } };
+
   const rows = await prisma.factMarketingSpend.findMany({
-    where: { spendDate: { gte: options.from, lte: options.to } },
+    where: {
+      ...regionFilter,
+      spendDate: { gte: options.from, lte: options.to },
+    },
     orderBy: { spendDate: "asc" },
   });
 

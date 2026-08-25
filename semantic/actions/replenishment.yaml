@@ -1,0 +1,7 @@
+driver_id: stockout_top_skus
+lever: replenishment
+action: Expedite purchase order and reallocate inventory across warehouses for the affected SKU
+owner_persona: supply_chain_manager
+expected_impact_range: [180000, 250000]
+confidence: high
+monitoring_plan: Track stockout rate, fill rate, and revenue by SKU daily for 5 days after replenishment

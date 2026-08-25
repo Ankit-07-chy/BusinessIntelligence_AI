@@ -2,10 +2,16 @@ import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { prisma } from "../../db/prismaClient.js";
 import { feedbackRequestSchema } from "../../schemas/feedback.js";
+import { getFeedbackSummary } from "../../services/feedbackService.js";
 
 export const feedbackRouter = Router();
 
 feedbackRouter.use(requireAuth);
+
+feedbackRouter.get("/feedback/summary", async (req, res) => {
+  const anomalyId = typeof req.query.anomalyId === "string" ? req.query.anomalyId : undefined;
+  res.json(await getFeedbackSummary({ anomalyId }));
+});
 
 feedbackRouter.post("/feedback", async (req, res, next) => {
   try {

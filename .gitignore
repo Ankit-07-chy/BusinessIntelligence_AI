@@ -9,6 +9,8 @@ Thumbs.db
 
 # Prisma
 backend/prisma/dev.db
+backend/.env
+backend/prisma/migrations/
 
 # Generated data
 data/generated/
@@ -17,3 +19,9 @@ data/parquet/
 # IDE
 .vscode/
 .idea/
+
+# Phase files
+phase*.md
+
+#frontend
+frontend/.env

@@ -17,9 +17,12 @@ export function InsightsPage() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-slate-900">Insights</h2>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Telemetry Insights</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Review statistical anomalies and driver attributions.</p>
+        </div>
         <div className="flex gap-2">
           <Button
             variant={sortBy === "materiality" ? "primary" : "secondary"}
@@ -33,42 +36,43 @@ export function InsightsPage() {
         </div>
       </div>
 
-      {anomaliesQuery.isLoading && <p className="text-sm text-slate-500">Loading anomalies…</p>}
-      {anomaliesQuery.isError && <p className="text-sm text-red-600">Failed to load anomalies.</p>}
+      {anomaliesQuery.isLoading && <p className="text-sm text-slate-500 animate-pulse">Loading anomalies…</p>}
+      {anomaliesQuery.isError && <p className="text-sm text-rose-600 font-semibold">Failed to load anomalies. Check connection.</p>}
       {anomaliesQuery.data?.length === 0 && (
-        <p className="text-sm text-slate-500">
-          No anomalies detected yet — run the synthetic data generator (`npm run generate:data` in `backend/`) to
-          populate them.
-        </p>
+        <div className="flex flex-col items-center justify-center p-8 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/10">
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold">No anomalies detected yet.</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Please ensure the synthetic dataset is generated.</p>
+        </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {anomaliesQuery.data?.map((anomaly) => (
           <Link
             key={anomaly.anomalyId}
             to={`/insights/${anomaly.anomalyId}`}
-            className="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300"
+            className="block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
           >
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">{anomaly.kpiName}</p>
-                <p className="text-xs text-slate-500">{anomaly.period}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{anomaly.kpiName}</p>
+                <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5">{anomaly.period}</p>
               </div>
               <ConfidenceBadge label={anomaly.confidenceLabel} score={anomaly.confidenceScore} />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-slate-600">
+            <div className="mt-4 flex flex-wrap items-center gap-6 text-sm text-slate-600 dark:text-slate-400 border-t border-slate-50 dark:border-slate-800/50 pt-3">
               <span>
                 Delta:{" "}
-                <span className="font-medium text-slate-900">
+                <span className="font-bold text-slate-900 dark:text-white">
                   {anomaly.delta.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </span>
               </span>
               <span>
                 Materiality:{" "}
-                <span className="font-medium text-slate-900">{Math.round(anomaly.materialityScore * 100)}%</span>
+                <span className="font-bold text-slate-900 dark:text-white">{Math.round(anomaly.materialityScore * 100)}%</span>
               </span>
               <span>
-                {anomaly.driverCount} driver{anomaly.driverCount === 1 ? "" : "s"}
+                Drivers:{" "}
+                <span className="font-bold text-slate-900 dark:text-white">{anomaly.driverCount}</span>
               </span>
             </div>
           </Link>

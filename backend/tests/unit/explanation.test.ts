@@ -5,7 +5,7 @@ import type { AuthTokenPayload } from "../../src/schemas/auth.js";
 
 describe("Explanation Service & LLM Integration (Phase 4)", () => {
   const mockUser: AuthTokenPayload = {
-    id: "user-cfo-id",
+    sub: "user-cfo-id",
     username: "cfo",
     persona: "cfo",
     allowedRegions: ["ALL"],

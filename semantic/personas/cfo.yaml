@@ -1,14 +1,87 @@
 persona_id: cfo
 name: CFO
+description: Executive persona focused on financial impact, materiality, risk, and approval decisions.
+is_active: true
+
 focus:
   - revenue_impact
   - margin_impact
   - financial_risk
   - accountability
   - materiality
+
+primary_kpis:
+  - net_revenue
+  - gross_margin
+
+secondary_kpis:
+  - conversion_rate
+  - cac
+  - otif
+
 level_of_detail: high_level_summary
-narrative_strategy: professional_high_level_dollar_first
+
+narrative_preferences:
+  tone: executive
+  style: concise
+  start_with: dollar_impact
+  include_evidence: true
+  include_uncertainty: true
+  include_actions: true
+  avoid:
+    - deep_technical_logs
+    - raw_sql
+
 preferred_actions:
   - strategic_approval
-  - capex_approval
-access_scope: global_masked_columns
+  - budget_approval
+  - margin_guardrail_approval
+  - expedite_approval
+  - pricing_policy_approval
+
+restricted_columns: []
+
+sensitive_columns_allowed:
+  - fact_sales.gross_margin
+  - fact_sales.cogs
+  - fact_orders.gross_margin
+  - fact_orders.cogs
+
+access_policy:
+  row_level:
+    regions: all_permitted_by_user
+  column_level:
+    allow:
+      - net_revenue
+      - gross_margin
+      - cogs
+      - discount_amount
+      - returns_amount
+    deny:
+      - customer_pii
+      - employee_compensation
+  domain_level:
+    allow:
+      - finance
+      - sales
+      - marketing_summary
+      - supply_chain_summary
+
+decision_rights:
+  can_accept_action: true
+  can_approve_budget_change: true
+  budget_change_limit_usd: 250000
+  requires_approval_above_usd: 250000
+
+feedback_permissions:
+  can_correct_driver: true
+  can_accept_action: true
+  can_confirm_outcome: true
+
+escalation:
+  escalate_to: executive_committee
+  when:
+    - margin_impact_above_threshold
+    - enterprise_wide_anomaly
+
+version: 1.1.0

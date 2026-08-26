@@ -1,0 +1,90 @@
+persona_id: digital_product_manager
+name: Digital Product Manager
+description: E-commerce experience persona focused on website conversion, checkout funnel, payment reliability, and digital UX.
+is_active: true
+
+focus:
+  - conversion_rate
+  - checkout_funnel
+  - payment_success
+  - site_performance
+  - mobile_app_performance
+  - product_page_experience
+
+primary_kpis:
+  - conversion_rate
+
+secondary_kpis:
+  - net_revenue
+
+level_of_detail: funnel_level
+
+narrative_preferences:
+  tone: product_and_experience_focused
+  style: problem_solving
+  start_with: funnel_impact
+  include_evidence: true
+  include_uncertainty: true
+  include_actions: true
+  avoid:
+    - corporate_margin_detail
+    - supplier_cost
+
+preferred_actions:
+  - fix_payment_failure
+  - restore_website_availability
+  - fix_checkout_funnel
+  - reduce_page_latency
+  - rollback_app_release
+  - improve_product_page_content
+
+restricted_columns:
+  - fact_sales.cogs
+  - fact_sales.gross_margin
+  - fact_orders.cogs
+  - fact_orders.gross_margin
+  - dim_product.cost
+
+access_policy:
+  row_level:
+    regions: all_permitted_by_user
+  column_level:
+    allow:
+      - sessions
+      - cart_additions
+      - checkout_initiations
+      - conversion_rate
+      - payment_success_rate
+      - page_error_rate
+      - page_latency
+      - net_revenue
+    deny:
+      - cogs
+      - gross_margin
+      - supplier_cost
+      - customer_pii
+  domain_level:
+    allow:
+      - web_analytics
+      - digital_experience
+      - sales_summary
+    deny:
+      - finance_margin_detail
+
+decision_rights:
+  can_accept_action: true
+  can_approve_budget_change: false
+
+feedback_permissions:
+  can_correct_driver: true
+  can_accept_action: true
+  can_confirm_outcome: true
+
+escalation:
+  escalate_to: engineering_lead
+  when:
+    - site_outage
+    - payment_gateway_failure
+    - major_checkout_failure
+
+version: 1.0.0

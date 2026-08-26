@@ -1,14 +1,92 @@
 persona_id: marketing_manager
 name: Marketing Manager
+description: Growth and performance persona focused on traffic, campaign efficiency, conversion, CAC, and budget optimization.
+is_active: true
+
 focus:
   - campaign_performance
   - traffic
   - spend_efficiency
   - conversion
   - cac
+  - new_customer_volume
+
+primary_kpis:
+  - cac
+  - conversion_rate
+
+secondary_kpis:
+  - net_revenue
+
 level_of_detail: campaign_level
-narrative_strategy: performance_driven_optimization_focused
+
+narrative_preferences:
+  tone: performance_driven
+  style: action_oriented
+  start_with: traffic_and_conversion_impact
+  include_evidence: true
+  include_uncertainty: true
+  include_actions: true
+  avoid:
+    - detailed_supplier_cost
+    - corporate_margin_detail
+
 preferred_actions:
   - restore_budget
+  - reallocate_budget
   - run_incrementality_test
-access_scope: global_marketing_access
+  - refresh_creative
+  - investigate_traffic_quality
+  - validate_attribution
+
+restricted_columns:
+  - fact_sales.cogs
+  - fact_sales.gross_margin
+  - fact_orders.cogs
+  - fact_orders.gross_margin
+  - dim_product.cost
+
+access_policy:
+  row_level:
+    regions: all_permitted_by_user
+  column_level:
+    allow:
+      - spend_amount
+      - clicks
+      - impressions
+      - sessions
+      - conversion_rate
+      - net_revenue
+      - cac
+    deny:
+      - cogs
+      - gross_margin
+      - supplier_cost
+      - customer_pii
+  domain_level:
+    allow:
+      - marketing
+      - web_analytics
+      - sales_summary
+    deny:
+      - finance_margin_detail
+
+decision_rights:
+  can_accept_action: true
+  can_approve_budget_change: true
+  budget_change_limit_usd: 25000
+  requires_approval_above_usd: 25000
+
+feedback_permissions:
+  can_correct_driver: true
+  can_accept_action: true
+  can_confirm_outcome: true
+
+escalation:
+  escalate_to: cfo
+  when:
+    - margin_impacting_action
+    - budget_change_above_limit
+    - suspected_tracking_failure
+
+version: 1.1.0

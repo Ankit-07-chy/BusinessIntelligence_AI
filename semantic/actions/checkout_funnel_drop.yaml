@@ -1,7 +1,7 @@
 driver_id: checkout_funnel_drop
 lever: checkout_experience
 action: Investigate the checkout funnel step with the largest drop-off and fix friction, validation errors, or payment selection issues
-owner_persona: marketing_manager
+owner_persona: digital_product_manager
 expected_impact_range: [35000, 90000]
 confidence: medium
 monitoring_plan: Track cart additions, checkout initiations, payment success rate, and conversion rate daily for 5 days

@@ -37,6 +37,7 @@ const ACTION_TEMPLATE_FILES = [
   "actions/attribution_lag.yaml",
   "actions/new_customer_volume.yaml",
   "actions/insufficient_evidence.yaml",
+  "actions/paid_search_expansion.yaml",
 ];
 
 let cache: Map<string, ActionTemplate> | null = null;

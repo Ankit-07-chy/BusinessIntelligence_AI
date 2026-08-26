@@ -41,7 +41,8 @@ export function generateFactInventory(
           plan.affectedStoreIds.includes(store.storeId) &&
           plan.incidentDates.has(toIsoDate(date));
 
-        const unitsOnHand = isIncidentStockout ? 0 : randInt(rng, 15, 220);
+        const isRandomStockout = rng() < 0.015;
+        const unitsOnHand = (isIncidentStockout || isRandomStockout) ? 0 : randInt(rng, 15, 220);
         rows.push({
           productId: product.productId,
           storeId: store.storeId,
@@ -105,6 +106,20 @@ export function generateFactSales(
           units *= 0.9; // reduced paid-search-driven traffic softens online conversions only
         }
 
+        // Align random campaign events (budget cuts/expansions)
+        if (store.channelType === "online") {
+          const dateStr = toIsoDate(date);
+          const regionEvents = randomCampaignEvents.get(dateStr);
+          if (regionEvents && regionEvents.has(store.region)) {
+            const eventType = regionEvents.get(store.region);
+            if (eventType === "cut") {
+              units *= 0.8;
+            } else if (eventType === "expansion") {
+              units *= 1.2;
+            }
+          }
+        }
+
         units = Math.max(0, Math.round(units));
         const grossRevenue = Math.round(units * product.price * 100) / 100;
         const discountAmount = Math.round(grossRevenue * randRange(rng, 0.02, 0.08) * 100) / 100;
@@ -134,6 +149,9 @@ const SPEND_RANGE_BY_CHANNEL: Record<string, [number, number]> = {
   email: [200, 800],
 };
 
+// Shared map of generated campaign events (dateString -> region -> "cut" | "expansion")
+export const randomCampaignEvents = new Map<string, Map<string, "cut" | "expansion">>();
+
 export function generateFactMarketingSpend(
   rng: () => number,
   dates: Date[],
@@ -141,6 +159,10 @@ export function generateFactMarketingSpend(
   plan: IncidentPlan,
 ): GeneratedFactMarketingSpend[] {
   const rows: GeneratedFactMarketingSpend[] = [];
+  
+  // Clear any previous events
+  randomCampaignEvents.clear();
+
   for (const campaign of campaigns) {
     const [min, max] = SPEND_RANGE_BY_CHANNEL[campaign.channel] ?? [500, 2000];
     for (const date of dates) {
@@ -149,9 +171,29 @@ export function generateFactMarketingSpend(
       }
 
       let spendAmount = randRange(rng, min, max) * weekdayMultiplier(date);
-      if (campaign.campaignId === plan.paidSearchCampaign.campaignId && plan.incidentDates.has(toIsoDate(date))) {
+      const isIncidentDay = campaign.campaignId === plan.paidSearchCampaign.campaignId && plan.incidentDates.has(toIsoDate(date));
+      
+      if (isIncidentDay) {
         spendAmount *= 0.8; // the mandated 20% paid-search spend drop
+      } else if (campaign.channel === "paid_search") {
+        // Inject random marketing spend adjustments
+        const r = rng();
+        const dateStr = toIsoDate(date);
+        if (r < 0.02) { // 2% chance of spend cut
+          spendAmount *= 0.7;
+          if (!randomCampaignEvents.has(dateStr)) {
+            randomCampaignEvents.set(dateStr, new Map());
+          }
+          randomCampaignEvents.get(dateStr)!.set(campaign.region, "cut");
+        } else if (r > 0.98) { // 2% chance of spend expansion
+          spendAmount *= 1.3;
+          if (!randomCampaignEvents.has(dateStr)) {
+            randomCampaignEvents.set(dateStr, new Map());
+          }
+          randomCampaignEvents.get(dateStr)!.set(campaign.region, "expansion");
+        }
       }
+      
       spendAmount = Math.round(spendAmount * 100) / 100;
 
       const clicks = Math.round(spendAmount / randRange(rng, 0.8, 2.5));

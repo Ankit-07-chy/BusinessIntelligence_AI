@@ -6,45 +6,45 @@ This document maps the mathematical formulas, database structures, and testing s
 
 ## 1. System Mathematical Formulae & Logic
 
-The Quantitative Truth layer executes entirely in the backend through deterministic mathematical functions in [`backend/src/analytics/`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics):
+> **Correction (2026-08-26):** this section previously described formulas that do
+> not match the actual implementation (wrong weights, wrong thresholds, an
+> `outlier flag`/`business impact ×10` rule that doesn't exist in code). The
+> analytics source under `backend/src/analytics/` has not changed since Day 1 —
+> below is what it actually computes, per docs/architecture.md §2.1-2.8.
 
-### 1.1 Baseline Forecast ([`baseline.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/baseline.ts))
+The Quantitative Truth layer executes entirely in the backend through deterministic mathematical functions in `backend/src/analytics/`:
+
+### 1.1 Baseline Forecast (`baseline.ts`)
 Calculates an expected value per date based on same-weekday history:
-- **Same-Weekday Average (4-Week)**:
-  $$Same\_Weekday\_Average = \frac{\sum_{i=1}^{4} value(\text{Target Date} - i \times 7)}{\text{samplePoints}}$$
-- **Trend Adjustment (OLS Slope)**:
-  Calculates linear regression slope over the historical same-weekday values.
-- **Seasonality Adjustment**:
-  $$Seasonality\_Adjustment = (\text{WindowAverage}_{7\text{d}} - \text{WindowAverage}_{28\text{d}}) \times 0.5$$
-- **Expected Value**:
-  $$Expected\_Value = Same\_Weekday\_Average + Trend\_Adjustment + Seasonality\_Adjustment$$
-- **Category Fallback (Incident 3)**:
-  When fewer than 2 same-weekday points exist, the engine falls back to category-level aggregates (`category_fallback`), scaling the baseline accordingly.
+- **Same-Weekday Average**: mean of up to 4 same-weekday values from the prior 4 weeks (needs at least 2 to use this method).
+- **Trend Adjustment**: OLS slope over those same-weekday points (oldest first).
+- **Seasonality Adjustment**: `(windowAverage(7d) - windowAverage(28d)) * 0.5`.
+- **Expected Value**: `sameWeekdayAverage + trendAdjustment + seasonalityAdjustment`.
+- **Category Fallback (Incident 3)**: when fewer than 2 same-weekday points exist and a `categoryHistory` series is supplied, recurses on that series instead (`method: "category_fallback"`); with no category history either, falls back to a plain mean (`method: "insufficient_history_mean"`).
 
-### 1.2 Anomaly Detection & Materiality ([`anomalyDetection.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/anomalyDetection.ts), [`materiality.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/materiality.ts))
-- **Residual**: $Actual\_Value - Expected\_Value$
-- **Z-Score**:
-  $$Z\_Score = \frac{Residual}{Historical\_StdDev}$$
-- **Materiality Score**:
-  $$Materiality\_Score = |Z\_Score| \times \text{Business Impact} \times \text{Data Quality}$$
-  Where:
-  $$\text{Business Impact} = \frac{|Residual|}{Expected\_Value} \times 10$$
-- **Outlier Flag**: Triggered if $|Z\_Score| > 1.8$ AND business impact $> 1.0$ AND data quality $> 0.4$.
+### 1.2 Anomaly Detection & Materiality (`anomalyDetection.ts`, `materiality.ts`)
+- **Residual**: `actualValue - expectedValue`.
+- **Z-Score**: `residual / historicalStdDev` (0 if stdDev is 0).
+- **Is Anomaly**: `|residual| > absoluteThreshold AND |zScore| > statisticalThreshold AND dataQualityScore > minimumQualityScore`.
+- **Statistical Score**: `clamp01(|zScore| / referenceZScore)` (referenceZScore defaults to 3).
+- **Business Impact Score**: `clamp01(normalizedAbsDollarImpact + marginImpact + strategicWeight)`.
+- **Materiality Score**: `clamp01(statisticalScore * businessImpactScore * dataQualityScore)`.
 
-### 1.3 Data Quality & Confidence Scoring ([`dataQuality.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/dataQuality.ts), [`confidence.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/confidence.ts))
-- **Data Quality**:
-  $$Quality\_Score = 0.5 \times Completeness\_Score + 0.5 \times \left(1 - \frac{\text{Ingestion Lag in Days}}{14}\right)$$
-- **Confidence Classification**:
-  $$Confidence\_Score = 0.3 \times \text{Evidence Strength} + 0.25 \times \text{Data Quality} + 0.25 \times \text{Model Fit} + 0.2 \times \text{Causal Evidence}$$
-  - **High**: $\ge 0.75$
-  - **Medium**: $0.50 \le \text{Confidence} < 0.75$
-  - **Low**: $< 0.50$ (triggers **Abstention**)
+### 1.3 Data Quality & Confidence Scoring (`dataQuality.ts`, `confidence.ts`)
+- **Data Quality Score**: `0.4*completeness + 0.3*freshness + 0.2*consistency + 0.1*validity` (all clamped to [0,1]).
+- **Freshness Score**: decays linearly from 1 to 0 as a source gets up to 2x its expected refresh cadence overdue.
+- **Confidence Score**: `0.30*evidenceStrength + 0.25*dataQualityScore + 0.20*modelFitScore + 0.15*causalOrBusinessConfirmation + 0.10*freshnessScore`.
+  - **High**: `>= 0.75`
+  - **Medium**: `0.50 <= confidence < 0.75`
+  - **Low**: `< 0.50` (triggers **Abstention**)
 
-### 1.4 Abstention Handler ([`abstention.ts`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/backend/src/analytics/abstention.ts))
-Prevents LLM processing and returns structured JSON if:
-- $\text{Confidence} < 0.5$, OR
-- Data quality is below `0.5`, OR
-- Ingestion lag exceeds `5 days` (e.g. for marketing spend).
+### 1.4 Abstention Handler (`abstention.ts`)
+Abstains (returns a structured `status: "abstain"` response instead of calling the LLM) if ANY of:
+- `confidenceScore < 0.5`, OR
+- `keySourceMissing` is true, OR
+- `dataQualityScore < 0.5`, OR
+- `contradictionScore > contradictionThreshold` (default 0.6), OR
+- `securityFilterRemovedCriticalData` is true (the anomaly's KPI is a CLS-restricted column for the caller's role).
 
 ---
 
@@ -62,8 +62,8 @@ The engine maps 5 factual streams into PostgreSQL:
 ## 3. Implemented and Verified Phase Steps
 
 ### Phase 1: Environment & Database Initialization (Passed)
-- Provisioned PostgreSQL on host port **`5433`** to resolve native host port conflict.
-- Applied all 4 database migration steps in order via `npx prisma migrate dev`.
+- Provisioned PostgreSQL via `docker compose up -d postgres`, on the default host port **`5432`** (per `docker-compose.yml` — not 5433 as an earlier draft of this doc claimed).
+- Applied all database migration steps in order (6 migrations as of 2026-08-26).
 - Seeded system roles (CFO, Supply Chain Manager, Marketing Manager, Analyst) and metric catalog metadata.
 
 ### Phase 2: Synthetic Data Generation & Golden Incidents (Passed)
@@ -81,13 +81,4 @@ The engine maps 5 factual streams into PostgreSQL:
 ---
 
 ## 4. Test Verification Status
-Running the unit test suite (`npm run test`) runs **24 tests** successfully:
-1. **`baseline.test.ts`**: Verifies 4-week average forecasts, OLS trend adjustments, seasonality offsets, and category fallback.
-2. **`anomalyDetection.test.ts`**: Verifies residual variance, outlier thresholds, and statistical z-scores.
-3. **`materiality.test.ts`**: Confirms dollar impact levels and materiality rankings.
-4. **`dataQuality.test.ts`**: Confirms freshness and completeness scoring.
-5. **`confidence.test.ts`**: Checks score weighting classification.
-6. **`abstention.test.ts`**: Validates bypass logic for stale inputs.
-7. **`contribution.test.ts`**: Confirms driver attribution calculations.
-8. **`ranking.test.ts`**: Verifies multi-factor driver order.
-9. **`health.test.ts`**: Confirms API health check.
+As of 2026-08-26, `npm test` runs **32 tests across 12 files** successfully — the 8 analytics unit test files (22 tests), `health.test.ts` (2), `explanation.test.ts` (2), `security.test.ts` (3), and `goldenIncident004Security.test.ts` (3, added to cover golden incident 4 explicitly). All 4 golden incidents (`evals/golden_incidents/*.yaml`) have been run against the live pipeline and pass — see `backend/scripts/runGoldenIncidents.ts` for incidents 1-3 and `goldenIncident004Security.test.ts` for incident 4.

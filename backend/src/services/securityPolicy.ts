@@ -3,8 +3,19 @@ import { loadSemanticYaml } from "../semantic/loader.js";
 import type { EvidenceDriver, EvidencePack, EvidenceSource } from "../llm/types.js";
 
 interface RawRolePolicy {
-  allowed_regions: string[];
-  restricted_columns: string[];
+  row_level_security?: {
+    region_scope: string | string[];
+    user_intersection_required?: boolean;
+  };
+  kpi_access?: {
+    allowed?: string[];
+    denied?: string[];
+  };
+  column_access?: {
+    allow?: string[];
+    deny?: string[];
+    mask?: string[];
+  };
   blocked_domains: string[];
 }
 
@@ -17,6 +28,7 @@ export interface SecurityPolicy {
   allowedRegions: string[];
   restrictedColumns: string[];
   blockedDomains: string[];
+  deniedKpis: string[];
 }
 
 let cache: RawRolePolicies | null = null;
@@ -40,11 +52,17 @@ export function getEffectivePolicy(user: AuthTokenPayload): SecurityPolicy {
   const policies = loadRolePolicies().role_policies;
   const rolePolicy = policies[user.persona];
   if (!rolePolicy) {
-    return { persona: user.persona, allowedRegions: [], restrictedColumns: [], blockedDomains: [] };
+    return { persona: user.persona, allowedRegions: [], restrictedColumns: [], blockedDomains: [], deniedKpis: [] };
   }
 
   const userRegions = user.allowedRegions ?? [];
-  const roleRegions = rolePolicy.allowed_regions ?? [];
+  
+  let roleRegions: string[] = [];
+  if (rolePolicy.row_level_security?.region_scope) {
+    const scope = rolePolicy.row_level_security.region_scope;
+    roleRegions = Array.isArray(scope) ? scope : [scope];
+  }
+
   const allowedRegions = userRegions.includes("ALL")
     ? roleRegions
     : roleRegions.includes("ALL")
@@ -54,13 +72,17 @@ export function getEffectivePolicy(user: AuthTokenPayload): SecurityPolicy {
   return {
     persona: user.persona,
     allowedRegions,
-    restrictedColumns: rolePolicy.restricted_columns ?? [],
+    restrictedColumns: rolePolicy.column_access?.deny ?? [],
     blockedDomains: rolePolicy.blocked_domains ?? [],
+    deniedKpis: rolePolicy.kpi_access?.denied ?? [],
   };
 }
 
 /** True if this KPI/column is off-limits to the policy's role entirely. */
 export function isColumnRestricted(policy: SecurityPolicy, columnName: string): boolean {
+  if (policy.deniedKpis.some((kpi) => columnName.toLowerCase().includes(kpi.toLowerCase()))) {
+    return true;
+  }
   return policy.restrictedColumns.some((restricted) => columnName.toLowerCase().includes(restricted.toLowerCase()));
 }
 

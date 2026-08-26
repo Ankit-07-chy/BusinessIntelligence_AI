@@ -11,11 +11,29 @@ export function shouldAbstain(inputs: AbstentionInputs): AbstentionResult {
   const contradictionThreshold = inputs.contradictionThreshold ?? DEFAULT_CONTRADICTION_THRESHOLD;
   const reasons: string[] = [];
 
+  if (inputs.hasNonFiniteInputs) {
+    reasons.push("non_finite_inputs");
+  }
+
   if (inputs.confidenceScore < 0.5) reasons.push("confidence_below_threshold");
   if (inputs.keySourceMissing) reasons.push("key_source_missing");
   if (inputs.dataQualityScore < 0.5) reasons.push("data_quality_below_threshold");
-  if (inputs.contradictionScore > contradictionThreshold) reasons.push("contradictory_evidence");
+  
+  if (
+    inputs.contradictionScore !== undefined && 
+    inputs.contradictionScore > contradictionThreshold
+  ) {
+    reasons.push("contradictory_evidence");
+  }
+  
   if (inputs.securityFilterRemovedCriticalData) reasons.push("security_filter_removed_critical_data");
+  
+  if (inputs.sparseHistory && inputs.confidenceScore < 0.6) {
+    reasons.push("sparse_history_low_confidence");
+  }
+  if (inputs.baselineReliability !== undefined && inputs.baselineReliability < 0.4) {
+    reasons.push("baseline_unreliable");
+  }
 
   return { shouldAbstain: reasons.length > 0, reasons };
 }

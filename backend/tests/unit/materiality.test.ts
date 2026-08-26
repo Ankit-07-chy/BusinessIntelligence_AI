@@ -3,6 +3,7 @@ import {
   computeBusinessImpactScore,
   computeMaterialityScore,
   computeStatisticalScore,
+  computeMateriality,
 } from "../../src/analytics/materiality.js";
 
 describe("computeStatisticalScore", () => {
@@ -28,5 +29,31 @@ describe("computeMaterialityScore", () => {
       dataQualityScore: 0.9,
     });
     expect(score).toBeCloseTo(0.36, 5);
+  });
+});
+
+describe("computeMateriality", () => {
+  it("calculates multi-criteria materiality scores and levels", () => {
+    const resHigh = computeMateriality({
+      residual: -200000,
+      expectedValue: 1000000,
+      zScore: 5.0,
+      dataQualityScore: 0.9,
+      thresholdAbsoluteUsd: 100000,
+      thresholdPercent: 0.05,
+      strategicWeight: 0.8,
+    });
+    expect(resHigh.materialityLevel).toBe("high");
+    expect(resHigh.materialityScore).toBeGreaterThanOrEqual(0.6);
+
+    const resLow = computeMateriality({
+      residual: -100,
+      expectedValue: 1000,
+      zScore: 0.2,
+      dataQualityScore: 0.5,
+      thresholdAbsoluteUsd: 50000,
+      thresholdPercent: 0.1,
+    });
+    expect(resLow.materialityLevel).toBe("low");
   });
 });

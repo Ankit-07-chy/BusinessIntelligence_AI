@@ -85,12 +85,28 @@ export async function buildEvidencePackForAnomaly(
   return { evidencePack: maskedPack, keySourceMissing, securityFilterRemovedCriticalData };
 }
 
+/**
+ * Explanations are cached per (anomalyId, personaId) — personaId is the
+ * narrative voice requested (any user can ask for any persona's narrative,
+ * per the persona-tab comparison feature), not necessarily the caller's own
+ * persona. A cache HIT must therefore still be checked against the CALLING
+ * user's own CLS policy before being returned, exactly like a cache MISS
+ * would be via buildEvidencePackForAnomaly — otherwise one unrestricted
+ * user's cached narrative (with unmasked evidence baked into its text)
+ * would leak to every other user who requests the same anomaly+persona pair.
+ */
 export async function getOrCreateExplanation(
   anomalyId: string,
   personaId: string,
   user: AuthTokenPayload,
   prisma: PrismaClient = defaultPrisma,
 ) {
+  const anomaly = await prisma.anomaly.findUnique({ where: { anomalyId }, select: { kpiId: true } });
+  if (!anomaly) return null;
+
+  const policy = getEffectivePolicy(user);
+  if (isColumnRestricted(policy, anomaly.kpiId)) return null;
+
   const existing = await prisma.explanation.findUnique({
     where: { anomalyId_personaId: { anomalyId, personaId } },
   });

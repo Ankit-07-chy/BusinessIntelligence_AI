@@ -65,6 +65,44 @@ describe("Security Enforcement (RLS & CLS) & Telemetry Auditing", () => {
     expect(resCFO.status).toBe(200);
   });
 
+  it("enforces CLS on the raw KPI endpoints, not just anomalies", async () => {
+    // Supply Chain Manager's restricted_columns includes "gross_margin".
+    const tokenSCM = generateToken("supply_chain_manager", ["EU", "US"]);
+
+    const resList = await request(app).get("/api/v1/kpis").set("Authorization", `Bearer ${tokenSCM}`);
+    expect(resList.status).toBe(200);
+    expect(resList.body.some((k: any) => k.kpiId === "gross_margin")).toBe(false);
+
+    const resKpi = await request(app).get("/api/v1/kpis/gross_margin").set("Authorization", `Bearer ${tokenSCM}`);
+    expect(resKpi.status).toBe(403);
+
+    const resTimeseries = await request(app)
+      .get("/api/v1/kpis/gross_margin/timeseries")
+      .set("Authorization", `Bearer ${tokenSCM}`);
+    expect(resTimeseries.status).toBe(403);
+
+    // CFO has no restricted_columns, so gross_margin stays visible.
+    const tokenCFO = generateToken("cfo", ["ALL"]);
+    const resCfoList = await request(app).get("/api/v1/kpis").set("Authorization", `Bearer ${tokenCFO}`);
+    expect(resCfoList.body.some((k: any) => k.kpiId === "gross_margin")).toBe(true);
+  });
+
+  it("enforces the digital_product_manager role's kpi_access.denied list (gross_margin, cac, otif)", async () => {
+    const token = generateToken("digital_product_manager", ["ALL"]);
+
+    const resList = await request(app).get("/api/v1/kpis").set("Authorization", `Bearer ${token}`);
+    expect(resList.status).toBe(200);
+    const visibleIds = resList.body.map((k: any) => k.kpiId);
+    expect(visibleIds).toEqual(expect.arrayContaining(["conversion_rate", "net_revenue"]));
+    expect(visibleIds).not.toEqual(expect.arrayContaining(["gross_margin", "cac", "otif"]));
+
+    const resDenied = await request(app).get("/api/v1/kpis/gross_margin/timeseries").set("Authorization", `Bearer ${token}`);
+    expect(resDenied.status).toBe(403);
+
+    const resAllowed = await request(app).get("/api/v1/kpis/conversion_rate/timeseries").set("Authorization", `Bearer ${token}`);
+    expect(resAllowed.status).toBe(200);
+  });
+
   it("audits request attempts in the Telemetry logs", async () => {
     const token = generateToken("analyst", ["ALL"]);
     const path = "/api/v1/kpis";

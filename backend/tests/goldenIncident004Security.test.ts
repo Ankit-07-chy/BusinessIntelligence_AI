@@ -44,15 +44,19 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
     expect(listRes.status).toBe(200);
     expect(listRes.body.some((a: { kpiId: string }) => a.kpiId === "gross_margin")).toBe(false);
 
+    // 403, not 404 — the anomaly exists, it's the role's CLS policy that denies it,
+    // and the response body says so instead of pretending it doesn't exist.
     const detailRes = await request(app)
       .get(`/api/v1/anomalies/${marginAnomaly!.anomalyId}`)
       .set("Authorization", `Bearer ${euSupplyChainToken}`);
-    expect(detailRes.status).toBe(404);
+    expect(detailRes.status).toBe(403);
+    expect(detailRes.body.error).toMatch(/restricted/i);
 
     const explanationRes = await request(app)
       .get(`/api/v1/explanations/${marginAnomaly!.anomalyId}`)
       .set("Authorization", `Bearer ${euSupplyChainToken}`);
-    expect(explanationRes.status).toBe(404);
+    expect(explanationRes.status).toBe(403);
+    expect(explanationRes.body.error).toMatch(/restricted/i);
 
     const actionsRes = await request(app)
       .get(`/api/v1/actions?anomalyId=${marginAnomaly!.anomalyId}`)
@@ -65,6 +69,28 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
       .get(`/api/v1/anomalies/${marginAnomaly!.anomalyId}`)
       .set("Authorization", `Bearer ${tokenFor("cfo", ["ALL"])}`);
     expect(cfoDetailRes.status).toBe(200);
+  });
+
+  it("narrative_cache_not_leaked: a cached persona narrative for a margin anomaly still stays hidden from a restricted role", async () => {
+    const marginAnomaly = await prisma.anomaly.findFirst({ where: { kpiId: "gross_margin" } });
+    expect(marginAnomaly).not.toBeNull();
+
+    // CFO (unrestricted) warms the /personas/cfo/narrative cache for this anomaly.
+    const cfoWarm = await request(app)
+      .get(`/api/v1/personas/cfo/narrative`)
+      .query({ anomalyId: marginAnomaly!.anomalyId })
+      .set("Authorization", `Bearer ${tokenFor("cfo", ["ALL"])}`);
+    expect(cfoWarm.status).toBe(200);
+
+    // A margin-restricted role requesting the SAME anomaly+persona pair must not
+    // get the cached-for-cfo narrative back — the cache key doesn't carry the
+    // caller's own role, so this only stays safe if the cache hit is re-checked.
+    const restrictedRead = await request(app)
+      .get(`/api/v1/personas/cfo/narrative`)
+      .query({ anomalyId: marginAnomaly!.anomalyId })
+      .set("Authorization", `Bearer ${euSupplyChainToken}`);
+    expect(restrictedRead.status).toBe(403);
+    expect(restrictedRead.body.error).toMatch(/restricted/i);
   });
 
   it("access_attempt_logged: the restricted request is recorded in telemetry_requests", async () => {
@@ -80,6 +106,6 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
       orderBy: { createdAt: "desc" },
     });
     expect(logged).not.toBeNull();
-    expect(logged?.statusCode).toBe(404);
+    expect(logged?.statusCode).toBe(403);
   });
 });

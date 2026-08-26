@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { api } from "../lib/api";
+import { queryClient } from "../lib/queryClient";
 import type { AuthUser } from "../lib/types";
 
 interface AuthContextValue {
@@ -25,12 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     localStorage.setItem("auth_token", data.token);
     localStorage.setItem("auth_user", JSON.stringify(data.user));
+    // Query keys (kpis, anomalies, narratives, ...) don't carry the persona,
+    // so a cached response from the previous persona would otherwise be
+    // shown as "fresh" under the new one until staleTime elapses.
+    queryClient.clear();
     setUser(data.user);
   }
 
   function logout() {
     localStorage.removeItem("auth_token");
     localStorage.removeItem("auth_user");
+    queryClient.clear();
     setUser(null);
   }
 

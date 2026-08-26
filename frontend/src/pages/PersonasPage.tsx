@@ -4,7 +4,7 @@ export function PersonasPage() {
   return (
     <ComingSoon
       title="Personas"
-      description="Compare how the same KPI movement is narrated for CFO, Supply Chain, Marketing, and Analyst."
+      description="Compare how the same KPI movement is narrated for CFO, Supply Chain, Marketing, Analyst, and Digital Product Manager."
     />
   );
 }

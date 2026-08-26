@@ -288,6 +288,27 @@ function calculateMonthlyTrendChange(kpiId: string, series: { date: string; valu
   return previous !== 0 ? (latest - previous) / previous : 0;
 }
 
+interface AnomalyListRow {
+  anomalyId: string;
+  kpiId: string;
+  kpiName: string;
+  period: string;
+  actualValue: number;
+  forecastValue: number;
+  delta: number;
+  zScore: number;
+  materialityScore: number;
+  dataQualityScore: number;
+  refreshCadence: string;
+  confidenceScore: number;
+  confidenceLabel: string;
+  driverCount: number;
+  periodOverPeriodChange: number;
+  weeklyChangePercent: number;
+  monthlyChangePercent: number;
+  createdAt: Date | string;
+}
+
 export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: AuthTokenPayload } = {}, prisma: PrismaClient = defaultPrisma) {
   const policy = options.user ? getEffectivePolicy(options.user) : null;
   const anomalies = await prisma.anomaly.findMany({
@@ -323,7 +344,7 @@ export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: Au
     })
   );
 
-  const rows: any[] = [];
+  const rows: AnomalyListRow[] = [];
 
   for (const period of uniquePeriods) {
     for (const kpi of kpis) {
@@ -404,9 +425,38 @@ export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: Au
   }
 
   const sortBy = options.sortBy ?? "materiality";
-  // Keep sorting by materiality for real anomalies, keep order stable
-  rows.sort((a, b) => b.materialityScore - a.materialityScore);
+  rows.sort((a, b) => (sortBy === "confidence" ? b.confidenceScore - a.confidenceScore : b.materialityScore - a.materialityScore));
   return rows;
+}
+
+export type AnomalyAccess = "ok" | "not_found" | "restricted";
+
+/**
+ * Cheap pre-check so a route can tell "doesn't exist" (404) apart from
+ * "exists but your role's CLS policy denies it" (403) without duplicating
+ * the CLS logic that getAnomalyDetail/getOrCreateExplanation already apply
+ * to build the actual payload.
+ */
+export async function checkAnomalyAccess(
+  anomalyId: string,
+  user?: AuthTokenPayload,
+  prisma: PrismaClient = defaultPrisma,
+): Promise<AnomalyAccess> {
+  let kpiId: string;
+  if (anomalyId.startsWith("temp-")) {
+    // Synthetic row from listAnomalies for a KPI/period with no persisted
+    // Anomaly yet — mirror getAnomalyDetail's id parsing instead of hitting
+    // the anomaly table, which has no matching row for these.
+    kpiId = anomalyId.split("-")[1];
+    const kpi = await prisma.kpiDefinition.findUnique({ where: { kpiId } });
+    if (!kpi) return "not_found";
+  } else {
+    const anomaly = await prisma.anomaly.findUnique({ where: { anomalyId }, select: { kpiId: true } });
+    if (!anomaly) return "not_found";
+    kpiId = anomaly.kpiId;
+  }
+  if (user && isColumnRestricted(getEffectivePolicy(user), kpiId)) return "restricted";
+  return "ok";
 }
 
 export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayload, prisma: PrismaClient = defaultPrisma) {

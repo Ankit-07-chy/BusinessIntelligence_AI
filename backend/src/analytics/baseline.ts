@@ -99,7 +99,7 @@ export function computeBaseline(
     const recent7 = windowAverage(historyMap, targetDate, 7);
     const recent28 = windowAverage(historyMap, targetDate, 28);
     
-    let rawSeasonality = recent28 === 0 ? 0 : (recent7 - recent28) * seasonalityWeight;
+    const rawSeasonality = recent28 === 0 ? 0 : (recent7 - recent28) * seasonalityWeight;
     const maxSeasonalityAdjustment = Math.max(Math.abs(sameWeekdayAverage) * 0.25, 1e-6);
     const seasonalityAdjustment = Math.max(-maxSeasonalityAdjustment, Math.min(maxSeasonalityAdjustment, rawSeasonality));
     

@@ -1,9 +1,9 @@
 export const SEED = 42;
-export const TOTAL_DAYS = 90;
+export const TOTAL_DAYS = 180;
 export const REGIONS = ["EU", "US"] as const;
 
-/** Day index (0-based) the multi-factor incident begins on — "Day 15". */
-export const INCIDENT_DAY_INDEX = 14;
+/** Day index (0-based) the multi-factor incident begins on — "Day 105" for a 6-month scale. */
+export const INCIDENT_DAY_INDEX = 104;
 export const INCIDENT_DURATION_DAYS = 5;
 export const INCIDENT_REGION: (typeof REGIONS)[number] = "EU";
 

@@ -1,24 +1,66 @@
 kpi_id: conversion_rate
 name: Online Conversion Rate
 owner: Digital Product
-business_definition: Orders divided by traffic sessions
-formula: SUM(orders) / SUM(sessions)
+unit: percentage
+direction: increase_is_good
+anomaly_direction: decrease
+
+business_definition: >
+  Completed online orders divided by online sessions.
+  Only online stores and completed orders are included.
+
+formula: >
+  COUNT(DISTINCT fact_orders.order_id)
+  / SUM(fact_web_traffic.sessions)
+
 primary_source: fact_web_traffic
-grain: channel-device-day
-refresh_cadence: hourly
+
+secondary_sources:
+  - fact_orders
+  - dim_store
+
+grain: store-day
+period: daily
+refresh_cadence: daily
+
 dimensions:
-  - channel
-  - device
+  - store_id
   - region
+  - channel_type
+
+filters:
+  store_channel_type: Online
+  order_status: Completed
+
 thresholds:
-  absolute_drop_usd: 0
   percent_drop: 2
+  absolute_drop_usd: null
+  percent_increase: null
+  absolute_increase_usd: null
+
 drivers:
   - traffic_quality
   - checkout_errors
+  - payment_failures
   - product_availability
   - promotion_relevance
+  - site_outage
+  - stockout_rate
+
 access_policy:
   row_level: region
   column_level: {}
-version: 1.0.0
+
+lineage:
+  sessions_source: fact_web_traffic
+  orders_source: fact_orders
+  store_source: dim_store
+
+quality_rules:
+  min_data_quality_score: 0.6
+  freshness_penalty: true
+  abstain_if_missing:
+    - fact_web_traffic
+    - fact_orders
+
+version: 1.0.1

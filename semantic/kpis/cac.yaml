@@ -1,22 +1,70 @@
 kpi_id: cac
 name: Customer Acquisition Cost
 owner: Growth Marketing
-business_definition: Marketing spend divided by newly acquired customers
-formula: SUM(marketing_spend) / SUM(new_customers)
+unit: currency_usd
+direction: decrease_is_good
+anomaly_direction: increase
+
+business_definition: >
+  Marketing spend divided by newly acquired customers.
+  New customers are distinct customers whose first completed order
+  occurred in the reporting period.
+
+formula: >
+  SUM(fact_marketing_spend.spend_amount)
+  / COUNT(DISTINCT fact_orders.customer_id)
+
 primary_source: fact_marketing_spend
+
+secondary_sources:
+  - fact_orders
+  - dim_customer
+  - dim_campaign
+
 grain: campaign-day
+period: weekly
 refresh_cadence: weekly
+
 dimensions:
-  - channel
-  - campaign
+  - region
+  - campaign_id
+  - marketing_channel
+
+filters:
+  order_status: Completed
+  is_new_customer: true
+
 thresholds:
-  absolute_drop_usd: 0
-  percent_drop: 10
+  percent_increase: 10
+  absolute_increase_usd: 5
+  percent_drop: null
+  absolute_drop_usd: null
+
 drivers:
   - campaign_bidding_efficiency
   - paid_traffic_mix
   - brand_search_volume
+  - marketing_data_lag
+  - new_customer_attribution_lag
+  - spend_amount
+  - clicks
+  - impressions
+
 access_policy:
   row_level: region
   column_level: {}
-version: 1.0.0
+
+lineage:
+  spend_source: fact_marketing_spend
+  new_customer_source: fact_orders
+  customer_source: dim_customer
+  campaign_source: dim_campaign
+
+quality_rules:
+  min_data_quality_score: 0.6
+  freshness_penalty: true
+  abstain_if_missing:
+    - fact_marketing_spend
+    - fact_orders
+
+version: 1.0.1

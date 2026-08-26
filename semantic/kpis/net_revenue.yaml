@@ -1,27 +1,68 @@
 kpi_id: net_revenue
 name: Net Revenue
 owner: Finance
-business_definition: Total sales after discounts and returns
-formula: SUM(gross_revenue - discount_amount - returns_amount)
+unit: currency_usd
+direction: increase_is_good
+anomaly_direction: decrease
+
+business_definition: >
+  Total sales after discounts and returns.
+
+formula: >
+  SUM(gross_revenue - discount_amount - returns_amount)
+
 primary_source: fact_sales
+
+secondary_sources:
+  - dim_store
+  - dim_product
+  - fact_inventory
+  - fact_marketing_spend
+  - fact_web_traffic
+
 grain: product-store-day
+period: daily
 refresh_cadence: daily
+
 dimensions:
   - region
-  - store
-  - product
+  - store_id
+  - product_id
   - category
+
 thresholds:
-  absolute_drop_usd: 100000
   percent_drop: 5
+  absolute_drop_usd: 100000
+  percent_increase: null
+  absolute_increase_usd: null
+
 drivers:
   - stockout_rate
   - marketing_spend
   - price_change
   - discount_rate
   - seasonality
+  - traffic_volume
+  - conversion_rate
+  - competitor_activity
+
 access_policy:
   row_level: region
   column_level:
-    margin: finance_only
-version: 1.0.0
+    fact_sales.cogs: finance_only
+    fact_sales.gross_margin: finance_only
+
+lineage:
+  sales_source: fact_sales
+  store_source: dim_store
+  product_source: dim_product
+  inventory_source: fact_inventory
+  marketing_source: fact_marketing_spend
+
+quality_rules:
+  min_data_quality_score: 0.7
+  freshness_penalty: true
+  abstain_if_missing:
+    - fact_sales
+
+version: 1.0.1

@@ -3,9 +3,20 @@ import { loadSemanticYaml } from "../semantic/loader.js";
 import type { EvidenceDriver, EvidencePack, EvidenceSource } from "../llm/types.js";
 
 interface RawRolePolicy {
-  allowed_regions: string[];
-  restricted_columns: string[];
-  blocked_domains: string[];
+  row_level_security?: {
+    region_scope: "ALL" | string[];
+    user_intersection_required?: boolean;
+  };
+  kpi_access?: {
+    allowed?: string[];
+    denied?: string[];
+  };
+  column_access?: {
+    allow?: string[];
+    mask?: string[];
+    deny?: string[];
+  };
+  blocked_domains?: string[];
 }
 
 interface RawRolePolicies {
@@ -35,6 +46,13 @@ function loadRolePolicies(): RawRolePolicies {
  * CALLING user's own persona/region grant — never from a narrative-style
  * persona parameter, so switching narrative tabs can't be used to see data
  * the logged-in user isn't actually entitled to.
+ *
+ * role_policies.yaml splits denials across kpi_access.denied (KPI ids, e.g.
+ * "gross_margin") and column_access.deny (dotted table.column names, e.g.
+ * "fact_sales.cogs"). isColumnRestricted matches against both a bare kpiId
+ * and a bare driver/source name, so column_access.deny entries are reduced
+ * to their column name (the part after the last dot) before merging with
+ * kpi_access.denied into one restrictedColumns list.
  */
 export function getEffectivePolicy(user: AuthTokenPayload): SecurityPolicy {
   const policies = loadRolePolicies().role_policies;
@@ -44,17 +62,26 @@ export function getEffectivePolicy(user: AuthTokenPayload): SecurityPolicy {
   }
 
   const userRegions = user.allowedRegions ?? [];
-  const roleRegions = rolePolicy.allowed_regions ?? [];
-  const allowedRegions = userRegions.includes("ALL")
+  const rawScope = rolePolicy.row_level_security?.region_scope ?? [];
+  const roleRegions = rawScope === "ALL" ? ["ALL"] : rawScope;
+  const requiresIntersection = rolePolicy.row_level_security?.user_intersection_required ?? true;
+
+  const allowedRegions = !requiresIntersection
     ? roleRegions
-    : roleRegions.includes("ALL")
-      ? userRegions
-      : userRegions.filter((region) => roleRegions.includes(region));
+    : userRegions.includes("ALL")
+      ? roleRegions
+      : roleRegions.includes("ALL")
+        ? userRegions
+        : userRegions.filter((region) => roleRegions.includes(region));
+
+  const deniedKpis = rolePolicy.kpi_access?.denied ?? [];
+  const deniedColumns = (rolePolicy.column_access?.deny ?? []).map((column) => column.split(".").pop() ?? column);
+  const restrictedColumns = Array.from(new Set([...deniedKpis, ...deniedColumns]));
 
   return {
     persona: user.persona,
     allowedRegions,
-    restrictedColumns: rolePolicy.restricted_columns ?? [],
+    restrictedColumns,
     blockedDomains: rolePolicy.blocked_domains ?? [],
   };
 }
@@ -62,6 +89,62 @@ export function getEffectivePolicy(user: AuthTokenPayload): SecurityPolicy {
 /** True if this KPI/column is off-limits to the policy's role entirely. */
 export function isColumnRestricted(policy: SecurityPolicy, columnName: string): boolean {
   return policy.restrictedColumns.some((restricted) => columnName.toLowerCase().includes(restricted.toLowerCase()));
+}
+
+/**
+ * Keyword hints per blocked domain, per docs/security_model.md's list
+ * (executive compensation, PII, M&A planning, legal). This is intentionally
+ * a simple keyword match, not an NLP classifier — good enough to catch an
+ * obvious out-of-scope chat question before it ever reaches the LLM; it is
+ * not a substitute for a real content-safety pipeline in production.
+ */
+const DOMAIN_KEYWORDS: Record<string, string[]> = {
+  executive_compensation: [
+    "executive compensation",
+    "ceo salary",
+    "cfo salary",
+    "exec pay",
+    "executive pay",
+    "bonus payout",
+    "stock options",
+    "equity grant",
+  ],
+  pii: [
+    "social security",
+    "ssn",
+    "date of birth",
+    "home address",
+    "phone number",
+    "email address",
+    "employee id",
+    "personal data",
+  ],
+  mna_planning: ["acquisition", "merger", "m&a", "buyout", "divestiture", "due diligence"],
+  legal: ["lawsuit", "litigation", "legal counsel", "compliance violation", "contract dispute", "subpoena"],
+  hr_sensitive: ["performance review", "disciplinary action", "termination", "employee complaint", "hr investigation"],
+  finance_margin_detail: ["gross margin", "cogs", "cost of goods sold", "margin detail", "profit margin"],
+  supply_chain_operational_detail: [
+    "warehouse capacity",
+    "fulfillment center",
+    "supplier contract",
+    "inventory levels",
+    "shipment routing",
+  ],
+};
+
+/**
+ * Checks free-text (e.g. a chat question) against the policy's blocked
+ * domains. Returns the matched domain name, or null if nothing matched.
+ * Callers should check this BEFORE building an evidence pack or calling the
+ * LLM at all — a blocked-domain question should never touch anomaly data.
+ */
+export function matchBlockedDomain(policy: SecurityPolicy, text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const domain of policy.blockedDomains) {
+    const keywords = DOMAIN_KEYWORDS[domain] ?? [domain.replace(/_/g, " ")];
+    if (keywords.some((keyword) => lower.includes(keyword))) return domain;
+  }
+  return null;
 }
 
 /**

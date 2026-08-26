@@ -168,22 +168,27 @@ function processSeries(
   const netRevenueTimeseries = useQuery({
     queryKey: ["kpi-timeseries", "net_revenue"],
     queryFn: async () => (await api.get<KpiTimeseriesPoint[]>("/kpis/net_revenue/timeseries")).data,
+    enabled: !!kpisQuery.data && kpisQuery.data.some((k) => k.kpiId === "net_revenue"),
   });
   const grossMarginTimeseries = useQuery({
     queryKey: ["kpi-timeseries", "gross_margin"],
     queryFn: async () => (await api.get<KpiTimeseriesPoint[]>("/kpis/gross_margin/timeseries")).data,
+    enabled: !!kpisQuery.data && kpisQuery.data.some((k) => k.kpiId === "gross_margin"),
   });
   const conversionRateTimeseries = useQuery({
     queryKey: ["kpi-timeseries", "conversion_rate"],
     queryFn: async () => (await api.get<KpiTimeseriesPoint[]>("/kpis/conversion_rate/timeseries")).data,
+    enabled: !!kpisQuery.data && kpisQuery.data.some((k) => k.kpiId === "conversion_rate"),
   });
   const otifTimeseries = useQuery({
     queryKey: ["kpi-timeseries", "otif"],
     queryFn: async () => (await api.get<KpiTimeseriesPoint[]>("/kpis/otif/timeseries")).data,
+    enabled: !!kpisQuery.data && kpisQuery.data.some((k) => k.kpiId === "otif"),
   });
   const cacTimeseries = useQuery({
     queryKey: ["kpi-timeseries", "cac"],
     queryFn: async () => (await api.get<KpiTimeseriesPoint[]>("/kpis/cac/timeseries")).data,
+    enabled: !!kpisQuery.data && kpisQuery.data.some((k) => k.kpiId === "cac"),
   });
 
   // Processed timeseries for dials and charts

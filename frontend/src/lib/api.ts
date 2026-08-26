@@ -11,6 +11,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      if (!window.location.pathname.endsWith("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * The backend returns 403 (with a human-readable `error` message) when a
  * role's RLS/CLS policy is what's hiding something, as opposed to a plain

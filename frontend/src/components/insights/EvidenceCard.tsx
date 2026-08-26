@@ -23,7 +23,7 @@ export function EvidenceCard({ anomaly }: { anomaly: AnomalyDetail }) {
         <Stat label="Forecast" value={formatNumber(anomaly.forecastValue)} />
         <Stat label="Delta" value={formatNumber(anomaly.delta)} />
         <Stat label="Z-score" value={anomaly.zScore.toFixed(2)} />
-        <Stat label="Materiality" value={`${Math.round(anomaly.materialityScore * 100)}%`} />
+        <Stat label="Business Impact" value={`${Math.round(anomaly.materialityScore * 100)}%`} />
         <Stat label="Data quality" value={`${Math.round(anomaly.dataQualityScore * 100)}%`} />
       </dl>
       {anomaly.abstain && (

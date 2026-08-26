@@ -8,7 +8,7 @@ This document details the completed development phases, implemented security mod
 
 ### Phase 1: Environment & Database Scaffolding
 - Set up the Express.js backend and React (Vite) frontend repository.
-- Initialized local PostgreSQL database instance on port `5433` (custom containerized setup to avoid native port conflicts).
+- Initialized local PostgreSQL via `docker compose up -d postgres`, on the default port `5432` (per `docker-compose.yml`).
 - Defined database models in Prisma schema mapping 5 e-commerce facts (`fact_sales`, `fact_inventory`, `fact_marketing_spend`, `fact_web_traffic`, `fact_shipments`) and 4 metadata dimensions.
 - Applied all migration sequences and seeded operational roles (CFO, Supply Chain Manager, Marketing Manager, Analyst).
 
@@ -46,7 +46,7 @@ Both directories build clean with no TypeScript errors:
 ```
 
 ### Test Coverage Results
-Running the backend vitest engine verifies all **29 tests** pass:
+Running the backend vitest engine verifies all **32 tests** pass (updated 2026-08-26):
 - `tests/unit/anomalyDetection.test.ts` (3/3 passed)
 - `tests/unit/baseline.test.ts` (3/3 passed)
 - `tests/unit/contribution.test.ts` (3/3 passed)
@@ -58,3 +58,16 @@ Running the backend vitest engine verifies all **29 tests** pass:
 - `tests/health.test.ts` (2/2 passed)
 - `tests/unit/explanation.test.ts` (2/2 passed)
 - `tests/security.test.ts` (3/3 passed) — verifying RLS, CLS, and Telemetry logging
+- `tests/goldenIncident004Security.test.ts` (3/3 passed) — added to close a gap found on review (see Phase 6)
+
+### Golden Incident Verification
+All 4 golden incidents (`evals/golden_incidents/*.yaml`) were run against the live pipeline via `backend/scripts/runGoldenIncidents.ts` (incidents 1-3) and `goldenIncident004Security.test.ts` (incident 4) — all pass with no threshold tuning needed:
+- **Incident 1** (multi-factor): `stockout_top_skus` ranks #1, `paid_search_reduction` ranks #2, replenishment + marketing-budget actions both generated with the correct owner personas.
+- **Incident 2** (low confidence): abstains with a clarification question.
+- **Incident 3** (sparse history): baseline correctly falls back to `category_fallback` when a new product has fewer than 2 same-weekday history points.
+- **Incident 4** (security scope): EU-scoped user gets region-filtered results, margin-restricted anomalies are invisible across `/anomalies`, `/explanations`, and `/actions`, and the attempt is logged to `telemetry_requests`.
+
+### Phase 6: Post-Review Fixes (2026-08-26)
+A review found two accuracy problems and one real security gap, all now fixed:
+- This document and `docs/memory.md` both claimed Postgres ran on port `5433` and described analytics formulas that didn't match the actual (unchanged since Day 1) code in `backend/src/analytics/` — corrected in both docs.
+- `GET /actions` and `POST /actions/:id/accept|reject` did not apply CLS, so a restricted role could still see/act on actions tied to a KPI they're blocked from everywhere else. Fixed in `backend/src/services/actionService.ts` and `backend/src/routes/v1/actions.ts` — verified by `goldenIncident004Security.test.ts`.

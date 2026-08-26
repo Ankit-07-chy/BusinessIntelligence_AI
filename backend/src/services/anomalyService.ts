@@ -144,9 +144,11 @@ async function detectAnomaliesForKpi(prisma: PrismaClient, kpiId: string): Promi
       expectedValue: baseline.expectedValue,
       historicalStdDev,
       dataQualityScore,
-      absoluteThreshold,
-      statisticalThreshold: 2,
-      minimumQualityScore: 0.4,
+      thresholds: {
+        absoluteThreshold,
+        statisticalThreshold: 2,
+        minimumQualityScore: 0.4,
+      },
     });
     residualHistory.push(detection.residual);
 

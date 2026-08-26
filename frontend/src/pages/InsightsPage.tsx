@@ -28,7 +28,7 @@ export function InsightsPage() {
             variant={sortBy === "materiality" ? "primary" : "secondary"}
             onClick={() => setSortBy("materiality")}
           >
-            Sort by materiality
+            Sort by business impact
           </Button>
           <Button variant={sortBy === "confidence" ? "primary" : "secondary"} onClick={() => setSortBy("confidence")}>
             Sort by confidence
@@ -67,7 +67,7 @@ export function InsightsPage() {
                 </span>
               </span>
               <span>
-                Materiality:{" "}
+                Business Impact:{" "}
                 <span className="font-bold text-slate-900 dark:text-white">{Math.round(anomaly.materialityScore * 100)}%</span>
               </span>
               <span>

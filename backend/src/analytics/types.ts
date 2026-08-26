@@ -1,5 +1,7 @@
+export type KpiDirection = "increase_is_good" | "decrease_is_good" | "neutral";
+
 export interface TimeseriesPoint {
-  date: string; // ISO yyyy-mm-dd
+  date: string;
   value: number;
 }
 
@@ -12,25 +14,44 @@ export interface BaselineResult {
   trendAdjustment: number;
   seasonalityAdjustment: number;
   samplePoints: number;
+  isReliable: boolean;
+  reliabilityScore: number;
+  warning?: string;
+  fallbackMethod?: string;
 }
 
 export interface AnomalyThresholds {
-  absoluteThreshold: number;
-  statisticalThreshold: number;
-  minimumQualityScore: number;
+  absoluteThreshold?: number;
+  percentThreshold?: number;
+  statisticalThreshold?: number;
+  minimumQualityScore?: number;
+  minimumHistoryPoints?: number;
+  minimumBaselineReliability?: number;
 }
 
-export interface AnomalyDetectionInput extends Partial<AnomalyThresholds> {
+export interface AnomalyDetectionInput {
   actualValue: number;
   expectedValue: number;
   historicalStdDev: number;
   dataQualityScore: number;
+  direction?: KpiDirection;
+  historyPoints?: number;
+  baselineReliability?: number;
+  thresholds?: AnomalyThresholds;
 }
 
 export interface AnomalyDetectionResult {
   residual: number;
   zScore: number;
+  deviationPercentage: number;
   isAnomaly: boolean;
+  isAdverse: boolean;
+  isUsable: boolean;
+  passesBusinessThreshold: boolean;
+  passesStatisticalThreshold: boolean;
+  passesDataQualityThreshold: boolean;
+  passesBaselineReliabilityThreshold: boolean;
+  warning?: string;
 }
 
 export interface DataQualityInputs {
@@ -63,6 +84,10 @@ export interface ConfidenceInputs {
   modelFitScore: number;
   causalOrBusinessConfirmation: number;
   freshnessScore: number;
+  keySourceMissing?: boolean;
+  sparseHistory?: boolean;
+  contradictionScore?: number;
+  baselineReliability?: number;
 }
 
 export type ConfidenceLabel = "high" | "medium" | "low";
@@ -87,11 +112,14 @@ export interface RankedDriver extends DriverRankingInput {
 
 export interface AbstentionInputs {
   confidenceScore: number;
-  keySourceMissing: boolean;
+  keySourceMissing?: boolean;
   dataQualityScore: number;
-  contradictionScore: number;
+  contradictionScore?: number;
   contradictionThreshold?: number;
-  securityFilterRemovedCriticalData: boolean;
+  securityFilterRemovedCriticalData?: boolean;
+  sparseHistory?: boolean;
+  baselineReliability?: number;
+  hasNonFiniteInputs?: boolean;
 }
 
 export interface AbstentionResult {

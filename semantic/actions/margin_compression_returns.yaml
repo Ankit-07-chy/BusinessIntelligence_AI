@@ -2,6 +2,6 @@ driver_id: margin_compression_returns
 lever: returns_management
 action: Investigate abnormal return rates on affected SKUs and identify product, fulfillment, or quality issues driving the increase
 owner_persona: cfo
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [40000, 90000]
 confidence: medium
 monitoring_plan: Track return rate, refund value, and gross margin by SKU daily for 7 days

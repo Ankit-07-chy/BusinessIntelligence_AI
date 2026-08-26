@@ -2,6 +2,6 @@ driver_id: competitor_promotion
 lever: competitive_response
 action: Review competitor promotion impact by affected SKU and region, then adjust pricing, promotion, or merchandising selectively where the competitive gap is material
 owner_persona: marketing_manager
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [60000, 140000]
 confidence: medium
 monitoring_plan: Track competitor price or promotion gap, affected SKU conversion rate, traffic, and revenue daily for 7 days after the response

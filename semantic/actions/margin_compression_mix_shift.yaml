@@ -2,6 +2,6 @@ driver_id: margin_compression_mix_shift
 lever: product_mix
 action: Identify low-margin SKU or category mix shift and rebalance merchandising or sales focus toward higher-margin products
 owner_persona: cfo
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [30000, 80000]
 confidence: medium
 monitoring_plan: Track gross margin, product mix, and contribution margin by SKU and category daily for 7 days

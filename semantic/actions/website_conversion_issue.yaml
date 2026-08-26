@@ -2,6 +2,6 @@ driver_id: website_conversion_issue
 lever: website_experience
 action: Investigate affected product and checkout pages for errors, latency, or broken conversion paths and restore the failing experience
 owner_persona: marketing_manager
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [40000, 110000]
 confidence: medium
 monitoring_plan: Track conversion rate, page errors, page latency, and checkout completion daily for 5 days

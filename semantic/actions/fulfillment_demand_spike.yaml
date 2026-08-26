@@ -2,6 +2,6 @@ driver_id: fulfillment_demand_spike
 lever: fulfillment_capacity
 action: Rebalance fulfillment capacity and prioritize affected orders across warehouses and carriers during the demand spike
 owner_persona: supply_chain_manager
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [40000, 100000]
 confidence: medium
 monitoring_plan: Track OTIF, order backlog, fulfillment capacity utilization, and late-order rate daily for 5 days

@@ -2,6 +2,6 @@ driver_id: margin_compression_cost_change
 lever: cost_management
 action: Review recent COGS increases for affected SKUs and validate supplier cost changes before adjusting pricing or sourcing
 owner_persona: cfo
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [40000, 110000]
 confidence: medium
 monitoring_plan: Track unit cost, gross margin, and supplier cost variance by SKU daily for 7 days

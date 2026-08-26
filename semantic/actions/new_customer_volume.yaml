@@ -2,6 +2,6 @@ driver_id: new_customer_volume
 lever: customer_acquisition
 action: Investigate the decline in new-customer volume and identify the channels, campaigns, or funnel stages responsible before reallocating acquisition budget
 owner_persona: marketing_manager
-expected_impact_range: ["TBD", "TBD"]
+expected_impact_range: [70000, 160000]
 confidence: medium
 monitoring_plan: Track new customers, acquisition channel volume, conversion rate, and CAC daily for 7 days

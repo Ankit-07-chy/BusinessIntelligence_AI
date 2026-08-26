@@ -1,0 +1,7 @@
+driver_id: website_outage
+lever: site_reliability
+action: Investigate and restore website or checkout availability for affected channels, regions, or storefronts
+owner_persona: marketing_manager
+expected_impact_range: [60000, 150000]
+confidence: high
+monitoring_plan: Track site availability, error rate, sessions, checkout completion, and conversion rate hourly for 2 days

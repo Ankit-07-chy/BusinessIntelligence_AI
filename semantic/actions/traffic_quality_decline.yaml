@@ -1,0 +1,7 @@
+driver_id: traffic_quality_decline
+lever: traffic_quality
+action: Review channel targeting, invalid traffic, and audience quality; exclude low-intent segments before increasing spend
+owner_persona: marketing_manager
+expected_impact_range: [30000, 80000]
+confidence: medium
+monitoring_plan: Track bounce rate, session quality, conversion rate, CAC, and channel mix daily for 7 days

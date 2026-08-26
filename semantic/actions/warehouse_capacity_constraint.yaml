@@ -1,0 +1,7 @@
+driver_id: warehouse_capacity_constraint
+lever: warehouse_capacity
+action: Add temporary labor, adjust shift capacity, or redirect orders to alternative warehouses with available capacity
+owner_persona: supply_chain_manager
+expected_impact_range: [40000, 100000]
+confidence: medium
+monitoring_plan: Track warehouse backlog, processing time, capacity utilization, and OTIF daily for 5 days

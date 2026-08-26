@@ -46,12 +46,22 @@ export function ChatPage() {
       </label>
 
       <div className="space-y-3">
-        {history.map((turn, index) => (
-          <div key={index} className="space-y-1">
-            <p className="text-sm font-medium text-slate-900">You: {turn.question}</p>
-            <p className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">{turn.response.response.summary}</p>
-          </div>
-        ))}
+        {history.map((turn, index) => {
+          const isRestricted = turn.response.abstentionReasons.some((reason) => reason.startsWith("blocked_domain:"));
+          return (
+            <div key={index} className="space-y-1">
+              <p className="text-sm font-medium text-slate-900">You: {turn.question}</p>
+              <p
+                className={`rounded-md p-3 text-sm ${
+                  isRestricted ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-slate-700"
+                }`}
+              >
+                {isRestricted && <span className="font-semibold">Restricted by your role's data policy. </span>}
+                {turn.response.response.summary}
+              </p>
+            </div>
+          );
+        })}
         {ask.isError && <p className="text-sm text-red-600">Failed to get a response.</p>}
       </div>
 

@@ -1,13 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { api } from "../lib/api";
+import { api, getRestrictionMessage } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { ConfidenceBadge } from "../components/insights/ConfidenceBadge";
-import { ContributionWaterfall } from "../components/insights/ContributionWaterfall";
 import { DriverList } from "../components/insights/DriverList";
-import { EvidenceCard } from "../components/insights/EvidenceCard";
 import { PersonaNarrativeTabs } from "../components/insights/PersonaNarrativeTabs";
-import { LineagePanel } from "../components/insights/LineagePanel";
 import { ActionPlan } from "../components/insights/ActionPlan";
 import { FeedbackPanel } from "../components/feedback/FeedbackPanel";
 import type { AnomalyDetail } from "../lib/types";
@@ -58,6 +55,16 @@ export function InsightDetailPage() {
 
   if (anomalyQuery.isLoading) {
     return <p className="text-sm text-slate-500">Loading insight…</p>;
+  }
+
+  const restrictionMessage = getRestrictionMessage(anomalyQuery.error);
+  if (restrictionMessage) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+        <p className="font-semibold">Restricted by your role's data policy</p>
+        <p className="mt-1">{restrictionMessage}</p>
+      </div>
+    );
   }
   if (anomalyQuery.isError || !anomalyQuery.data || !id) {
     return <p className="text-sm text-red-600">Anomaly not found.</p>;

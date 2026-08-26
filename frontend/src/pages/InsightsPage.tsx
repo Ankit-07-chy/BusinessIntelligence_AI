@@ -8,13 +8,6 @@ import type { AnomalySummary, ActionRecommendation } from "../lib/types";
 
 type SortBy = "materiality" | "confidence";
 
-function getDaysAgo(dateStr: string, days: number): string {
-  if (!dateStr) return "";
-  const date = new Date(`${dateStr}T00:00:00.000Z`);
-  date.setUTCDate(date.getUTCDate() - days);
-  return date.toISOString().slice(0, 10);
-}
-
 function formatPeriodText(period: string, cadence: "daily" | "weekly" | "monthly"): string {
   if (!period) return "";
   if (cadence === "daily") {

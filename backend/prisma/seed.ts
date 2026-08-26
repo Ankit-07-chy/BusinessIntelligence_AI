@@ -18,6 +18,12 @@ const DEMO_USERS = [
     allowedRegions: ["ALL"],
   },
   { username: "analyst", displayName: "Sam Ortiz (Analyst)", persona: "analyst", allowedRegions: ["ALL"] },
+  {
+    username: "digital_product_manager",
+    displayName: "Jordan Kim (Digital Product Manager)",
+    persona: "digital_product_manager",
+    allowedRegions: ["ALL"],
+  },
 ] as const;
 
 const KPI_DEFINITIONS = [

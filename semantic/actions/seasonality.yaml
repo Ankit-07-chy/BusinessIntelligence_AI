@@ -1,0 +1,7 @@
+driver_id: seasonality
+lever: demand_planning
+action: No corrective intervention; adjust forecast and inventory or marketing plans to the expected seasonal pattern
+owner_persona: supply_chain_manager
+expected_impact_range: [0, 0]
+confidence: high
+monitoring_plan: Track actual KPI against the seasonally adjusted baseline daily for 7 days

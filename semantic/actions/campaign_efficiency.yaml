@@ -1,0 +1,7 @@
+driver_id: campaign_efficiency
+lever: campaign_optimization
+action: Identify underperforming campaigns and reallocate budget toward campaigns with stronger conversion efficiency and incremental customer acquisition
+owner_persona: marketing_manager
+expected_impact_range: ["TBD", "TBD"]
+confidence: medium
+monitoring_plan: Track campaign spend, conversion rate, CAC, and incremental customer volume daily for 7 days

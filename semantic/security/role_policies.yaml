@@ -1,20 +1,242 @@
+version: 1.2.0
+default_policy: deny
+audit_all_access: true
+masking_default: partial
+enforce_user_region_intersection: true
+
+data_classes:
+  pii:
+    description: Personally identifiable customer information
+    sensitivity: high
+  executive_compensation:
+    description: Executive pay and bonus data
+    sensitivity: critical
+  legal:
+    description: Legal and compliance data
+    sensitivity: critical
+  mna_planning:
+    description: Mergers and acquisitions planning data
+    sensitivity: critical
+  finance_margin_detail:
+    description: Margin, COGS, and cost detail
+    sensitivity: high
+  supply_chain_operational_detail:
+    description: Detailed fulfillment and warehouse operational data
+    sensitivity: medium
+
 role_policies:
   cfo:
-    allowed_regions: ["ALL"]
-    restricted_columns: []
-    blocked_domains: ["executive_compensation", "pii"]
+    description: Executive finance role.
+    row_level_security:
+      region_scope: ALL
+      user_intersection_required: true
+    kpi_access:
+      allowed:
+        - net_revenue
+        - gross_margin
+        - conversion_rate
+        - cac
+        - otif
+      denied: []
+    column_access:
+      allow:
+        - fact_sales.net_revenue
+        - fact_sales.gross_margin
+        - fact_sales.cogs
+        - fact_orders.net_revenue
+        - fact_orders.gross_margin
+        - fact_orders.cogs
+      mask:
+        - dim_customer.customer_id
+      deny:
+        - dim_customer.email
+        - dim_customer.customer_name
+        - employee_compensation.*
+    blocked_domains:
+      - pii
+      - executive_compensation
+      - legal
+      - hr_sensitive
+    action_permissions:
+      can_accept_action: true
+      can_approve_budget: true
+      budget_limit_usd: 250000
+    audit:
+      log_access: true
+      log_llm_evidence: true
 
   supply_chain_manager:
-    allowed_regions: ["EU", "US"]
-    restricted_columns: ["gross_margin", "cogs", "discount_amount"]
-    blocked_domains: ["executive_compensation", "pii", "ma_planning"]
+    description: Operational supply chain role.
+    row_level_security:
+      region_scope:
+        - EU
+        - US
+      user_intersection_required: true
+    kpi_access:
+      allowed:
+        - otif
+        - net_revenue
+      denied:
+        - gross_margin
+        - cac
+    column_access:
+      allow:
+        - fact_inventory.*
+        - fact_shipments.*
+        - fact_sales.net_revenue
+        - fact_orders.net_revenue
+        - dim_store.region
+        - dim_store.store_name
+        - dim_warehouse.*
+      mask:
+        - dim_customer.customer_id
+      deny:
+        - fact_sales.gross_margin
+        - fact_sales.cogs
+        - fact_orders.gross_margin
+        - fact_orders.cogs
+        - dim_product.cost
+        - dim_customer.email
+        - dim_customer.customer_name
+    blocked_domains:
+      - finance_margin_detail
+      - executive_compensation
+      - pii
+      - mna_planning
+      - legal
+    action_permissions:
+      can_accept_action: true
+      can_approve_budget: false
+      expedite_cost_limit_usd: 10000
+    audit:
+      log_access: true
+      log_llm_evidence: true
 
   marketing_manager:
-    allowed_regions: ["ALL"]
-    restricted_columns: ["gross_margin", "cogs", "otif"]
-    blocked_domains: ["executive_compensation", "pii", "legal"]
+    description: Growth and campaign optimization role.
+    row_level_security:
+      region_scope: ALL
+      user_intersection_required: true
+    kpi_access:
+      allowed:
+        - cac
+        - conversion_rate
+        - net_revenue
+      denied:
+        - gross_margin
+        - otif
+    column_access:
+      allow:
+        - fact_marketing_spend.*
+        - fact_web_traffic.*
+        - fact_orders.net_revenue
+        - fact_sales.net_revenue
+        - dim_campaign.*
+      mask:
+        - dim_customer.customer_id
+      deny:
+        - fact_sales.gross_margin
+        - fact_sales.cogs
+        - fact_orders.gross_margin
+        - fact_orders.cogs
+        - dim_product.cost
+        - dim_customer.email
+        - dim_customer.customer_name
+    blocked_domains:
+      - finance_margin_detail
+      - supply_chain_operational_detail
+      - executive_compensation
+      - pii
+      - legal
+    action_permissions:
+      can_accept_action: true
+      can_approve_budget: true
+      budget_limit_usd: 25000
+    audit:
+      log_access: true
+      log_llm_evidence: true
 
   analyst:
-    allowed_regions: ["ALL"]
-    restricted_columns: []
-    blocked_domains: ["executive_compensation", "pii", "ma_planning", "legal"]
+    description: Evidence, lineage, model validation, and data quality role.
+    row_level_security:
+      region_scope: ALL
+      user_intersection_required: true
+    kpi_access:
+      allowed:
+        - net_revenue
+        - gross_margin
+        - conversion_rate
+        - cac
+        - otif
+      denied: []
+    column_access:
+      allow:
+        - analytical_metrics.*
+        - telemetry_requests.*
+        - telemetry_llm_calls.*
+        - anomalies.*
+        - explanations.*
+        - driver_contributions.*
+        - source_status.*
+      mask:
+        - dim_customer.customer_id
+        - fact_orders.customer_id
+      deny:
+        - dim_customer.email
+        - dim_customer.customer_name
+        - employee_compensation.*
+        - legal.*
+    blocked_domains:
+      - pii
+      - executive_compensation
+      - mna_planning
+      - legal
+    action_permissions:
+      can_accept_action: false
+      can_approve_budget: false
+      can_correct_driver: true
+      can_request_data_validation: true
+    audit:
+      log_access: true
+      log_llm_evidence: true
+
+  digital_product_manager:
+    description: Digital experience, checkout, payment, and website conversion role.
+    row_level_security:
+      region_scope: ALL
+      user_intersection_required: true
+    kpi_access:
+      allowed:
+        - conversion_rate
+        - net_revenue
+      denied:
+        - gross_margin
+        - cac
+        - otif
+    column_access:
+      allow:
+        - fact_web_traffic.*
+        - fact_orders.net_revenue
+        - fact_sales.net_revenue
+      mask:
+        - dim_customer.customer_id
+      deny:
+        - fact_sales.gross_margin
+        - fact_sales.cogs
+        - fact_orders.gross_margin
+        - fact_orders.cogs
+        - dim_product.cost
+        - dim_customer.email
+        - dim_customer.customer_name
+    blocked_domains:
+      - finance_margin_detail
+      - supply_chain_operational_detail
+      - executive_compensation
+      - pii
+      - legal
+    action_permissions:
+      can_accept_action: true
+      can_approve_budget: false
+    audit:
+      log_access: true
+      log_llm_evidence: true

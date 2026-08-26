@@ -1,0 +1,7 @@
+driver_id: attribution_lag
+lever: attribution_analysis
+action: Reconcile delayed attribution data before changing campaign budgets and validate channel performance using the latest available conversion and customer data
+owner_persona: marketing_manager
+expected_impact_range: ["TBD", "TBD"]
+confidence: medium
+monitoring_plan: Track attribution completeness, attribution lag, channel conversions, and CAC daily for 7 days

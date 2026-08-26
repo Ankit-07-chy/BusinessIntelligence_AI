@@ -5,7 +5,7 @@ export interface ActionTemplate {
   lever: string;
   action: string;
   ownerPersona: string;
-  expectedImpactRange: [number, number];
+  expectedImpactRange: [number | string, number | string];
   confidence: "high" | "medium" | "low";
   monitoringPlan: string;
 }
@@ -15,12 +15,29 @@ interface RawActionTemplate {
   lever: string;
   action: string;
   owner_persona: string;
-  expected_impact_range: [number, number];
+  expected_impact_range: [number | string, number | string];
   confidence: "high" | "medium" | "low";
   monitoring_plan: string;
 }
 
-const ACTION_TEMPLATE_FILES = ["actions/replenishment.yaml", "actions/marketing_budget.yaml", "actions/pricing.yaml", "actions/fulfillment.yaml"];
+const ACTION_TEMPLATE_FILES = [
+  "actions/replenishment.yaml",
+  "actions/marketing_budget.yaml",
+  "actions/pricing.yaml",
+  "actions/fulfillment.yaml",
+  "actions/competitor_promotion.yaml",
+  "actions/seasonality.yaml",
+  "actions/margin_compression_mix_shift.yaml",
+  "actions/margin_compression_cost_change.yaml",
+  "actions/margin_compression_returns.yaml",
+  "actions/website_conversion_issue.yaml",
+  "actions/payment_failure.yaml",
+  "actions/fulfillment_demand_spike.yaml",
+  "actions/campaign_efficiency.yaml",
+  "actions/attribution_lag.yaml",
+  "actions/new_customer_volume.yaml",
+  "actions/insufficient_evidence.yaml",
+];
 
 let cache: Map<string, ActionTemplate> | null = null;
 

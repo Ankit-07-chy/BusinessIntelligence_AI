@@ -1,0 +1,7 @@
+driver_id: insufficient_evidence
+lever: evidence_validation
+action: Do not recommend a strong corrective action; request the missing or delayed evidence required to validate the suspected driver
+owner_persona: analyst
+expected_impact_range: [0, 0]
+confidence: low
+monitoring_plan: Monitor source availability and data quality, then reevaluate the driver and recommendation once the required evidence is available

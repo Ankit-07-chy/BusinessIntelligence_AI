@@ -257,6 +257,25 @@ export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: Au
   return rows;
 }
 
+export type AnomalyAccess = "ok" | "not_found" | "restricted";
+
+/**
+ * Cheap pre-check so a route can tell "doesn't exist" (404) apart from
+ * "exists but your role's CLS policy denies it" (403) without duplicating
+ * the CLS logic that getAnomalyDetail/getOrCreateExplanation already apply
+ * to build the actual payload.
+ */
+export async function checkAnomalyAccess(
+  anomalyId: string,
+  user?: AuthTokenPayload,
+  prisma: PrismaClient = defaultPrisma,
+): Promise<AnomalyAccess> {
+  const anomaly = await prisma.anomaly.findUnique({ where: { anomalyId }, select: { kpiId: true } });
+  if (!anomaly) return "not_found";
+  if (user && isColumnRestricted(getEffectivePolicy(user), anomaly.kpiId)) return "restricted";
+  return "ok";
+}
+
 export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayload, prisma: PrismaClient = defaultPrisma) {
   const anomaly = await prisma.anomaly.findUnique({
     where: { anomalyId },

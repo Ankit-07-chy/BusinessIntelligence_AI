@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../../lib/api";
+import { api, getRestrictionMessage } from "../../lib/api";
 import { PERSONA_IDS, type Explanation, type PersonaId } from "../../lib/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
@@ -33,6 +33,7 @@ export function PersonaNarrativeTabs({ anomalyId, defaultPersona }: { anomalyId:
 
   const explanation = narrativeQuery.data;
   const structured = explanation?.structuredResponse;
+  const restrictionMessage = getRestrictionMessage(narrativeQuery.error);
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -54,7 +55,14 @@ export function PersonaNarrativeTabs({ anomalyId, defaultPersona }: { anomalyId:
 
       <div className="p-4">
         {narrativeQuery.isLoading && <p className="text-sm text-slate-500">Generating narrative…</p>}
-        {narrativeQuery.isError && <p className="text-sm text-red-600">Failed to load narrative.</p>}
+        {restrictionMessage && (
+          <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+            <span className="font-semibold">Restricted by your role's data policy.</span> {restrictionMessage}
+          </p>
+        )}
+        {narrativeQuery.isError && !restrictionMessage && (
+          <p className="text-sm text-red-600">Failed to load narrative.</p>
+        )}
 
         {explanation && structured && (
           <div className="space-y-3">

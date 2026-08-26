@@ -44,15 +44,19 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
     expect(listRes.status).toBe(200);
     expect(listRes.body.some((a: { kpiId: string }) => a.kpiId === "gross_margin")).toBe(false);
 
+    // 403, not 404 — the anomaly exists, it's the role's CLS policy that denies it,
+    // and the response body says so instead of pretending it doesn't exist.
     const detailRes = await request(app)
       .get(`/api/v1/anomalies/${marginAnomaly!.anomalyId}`)
       .set("Authorization", `Bearer ${euSupplyChainToken}`);
-    expect(detailRes.status).toBe(404);
+    expect(detailRes.status).toBe(403);
+    expect(detailRes.body.error).toMatch(/restricted/i);
 
     const explanationRes = await request(app)
       .get(`/api/v1/explanations/${marginAnomaly!.anomalyId}`)
       .set("Authorization", `Bearer ${euSupplyChainToken}`);
-    expect(explanationRes.status).toBe(404);
+    expect(explanationRes.status).toBe(403);
+    expect(explanationRes.body.error).toMatch(/restricted/i);
 
     const actionsRes = await request(app)
       .get(`/api/v1/actions?anomalyId=${marginAnomaly!.anomalyId}`)
@@ -85,7 +89,8 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
       .get(`/api/v1/personas/cfo/narrative`)
       .query({ anomalyId: marginAnomaly!.anomalyId })
       .set("Authorization", `Bearer ${euSupplyChainToken}`);
-    expect(restrictedRead.status).toBe(404);
+    expect(restrictedRead.status).toBe(403);
+    expect(restrictedRead.body.error).toMatch(/restricted/i);
   });
 
   it("access_attempt_logged: the restricted request is recorded in telemetry_requests", async () => {
@@ -101,6 +106,6 @@ describe("Golden Incident 4 — security scope breach attempt", () => {
       orderBy: { createdAt: "desc" },
     });
     expect(logged).not.toBeNull();
-    expect(logged?.statusCode).toBe(404);
+    expect(logged?.statusCode).toBe(403);
   });
 });

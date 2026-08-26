@@ -141,3 +141,73 @@ export async function getPaidSearchDriverCandidate(
     method: "region_channel_control_comparison",
   };
 }
+
+/**
+ * Estimated revenue impact of a paid-search spend expansion on the given date.
+ * First confirms the spend increase actually happened (vs. the campaign's own
+ * weekday-matched baseline), then estimates the revenue effect via a control
+ * comparison on the affected region's online-channel stores.
+ */
+export async function getPaidSearchExpansionDriverCandidate(
+  prisma: PrismaClient,
+  targetDate: string,
+): Promise<DriverCandidate | null> {
+  const target = new Date(`${targetDate}T00:00:00.000Z`);
+  const paidSearchCampaigns = await prisma.dimCampaign.findMany({ where: { channel: "paid_search" } });
+  if (paidSearchCampaigns.length === 0) return null;
+
+  const affectedRegions = new Set<string>();
+  for (const campaign of paidSearchCampaigns) {
+    const spendRows = await prisma.factMarketingSpend.findMany({
+      where: { campaignId: campaign.campaignId, spendDate: { gte: addDays(target, -4 * 7), lte: target } },
+      orderBy: { spendDate: "asc" },
+    });
+    const actualRow = spendRows.find((r) => toIsoDate(r.spendDate) === targetDate);
+    if (!actualRow) continue;
+
+    const history: TimeseriesPoint[] = spendRows
+      .filter((r) => toIsoDate(r.spendDate) !== targetDate)
+      .map((r) => ({ date: toIsoDate(r.spendDate), value: Number(r.spendAmount) }));
+    const baseline = computeBaseline(history, targetDate);
+    const spendDelta = Number(actualRow.spendAmount) - baseline.expectedValue;
+    if (spendDelta > baseline.expectedValue * 0.05) {
+      affectedRegions.add(campaign.region);
+    }
+  }
+  if (affectedRegions.size === 0) return null;
+
+  const stockedOutProductIds = new Set(
+    (await prisma.factInventory.findMany({ where: { inventoryDate: target, isStockout: true } })).map(
+      (row) => row.productId,
+    ),
+  );
+  const onlineStores = await prisma.dimStore.findMany({
+    where: { channelType: "online", region: { in: Array.from(affectedRegions) } },
+  });
+  if (onlineStores.length === 0) return null;
+
+  let totalImpact = 0;
+  for (const store of onlineStores) {
+    const actualRows = await prisma.factSales.findMany({ where: { storeId: store.storeId, saleDate: target } });
+    const actualRevenue = actualRows
+      .filter((row) => !stockedOutProductIds.has(row.productId))
+      .reduce((sum, row) => sum + netRevenueOf(row), 0);
+
+    const historyRows = await prisma.factSales.findMany({
+      where: { storeId: store.storeId, saleDate: { gte: addDays(target, -LOOKBACK_DAYS), lt: target } },
+    });
+    const history = toDailySeries(historyRows.filter((row) => !stockedOutProductIds.has(row.productId)));
+    if (history.length === 0) continue;
+
+    const baseline = computeBaseline(history, targetDate);
+    totalImpact += actualRevenue - baseline.expectedValue;
+  }
+
+  if (totalImpact === 0) return null;
+  return {
+    driverId: "paid_search_expansion",
+    estimatedImpact: totalImpact,
+    method: "region_channel_control_comparison",
+  };
+}
+

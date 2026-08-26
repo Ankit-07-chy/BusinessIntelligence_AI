@@ -9,7 +9,7 @@ import { rankDrivers } from "../analytics/ranking.js";
 import { shouldAbstain } from "../analytics/abstention.js";
 import { prisma as defaultPrisma } from "../db/prismaClient.js";
 import { getKpiTimeseries } from "./kpiService.js";
-import { getPaidSearchDriverCandidate, getStockoutDriverCandidate, type DriverCandidate } from "./netRevenueDrivers.js";
+import { getPaidSearchDriverCandidate, getStockoutDriverCandidate, getPaidSearchExpansionDriverCandidate, type DriverCandidate } from "./netRevenueDrivers.js";
 import type { AuthTokenPayload } from "../schemas/auth.js";
 import { getEffectivePolicy, isColumnRestricted } from "./securityPolicy.js";
 
@@ -61,12 +61,21 @@ async function identifyNetRevenueDrivers(
   freshnessScore: number,
 ): Promise<Array<{ driverId: string; estimatedImpact: number; confidenceScore: number; method: string }>> {
   const candidates = (
-    await Promise.all([getStockoutDriverCandidate(prisma, targetDate), getPaidSearchDriverCandidate(prisma, targetDate)])
+    await Promise.all([
+      getStockoutDriverCandidate(prisma, targetDate),
+      getPaidSearchDriverCandidate(prisma, targetDate),
+      getPaidSearchExpansionDriverCandidate(prisma, targetDate),
+    ])
   ).filter((candidate): candidate is DriverCandidate => candidate !== null);
-  if (candidates.length === 0) return [];
+
+  const matchingCandidates = candidates.filter((candidate) => {
+    return totalKpiChange > 0 ? candidate.estimatedImpact > 0 : candidate.estimatedImpact < 0;
+  });
+
+  if (matchingCandidates.length === 0) return [];
 
   const safeTotalChange = totalKpiChange === 0 ? 1 : totalKpiChange;
-  const scored = candidates.map((candidate) => {
+  const scored = matchingCandidates.map((candidate) => {
     const evidenceStrength = clamp01(Math.abs(candidate.estimatedImpact / safeTotalChange));
     const isDirectObservation = candidate.method === "control_store_comparison";
     const confidenceScore = computeConfidenceScore({
@@ -144,9 +153,11 @@ async function detectAnomaliesForKpi(prisma: PrismaClient, kpiId: string): Promi
       expectedValue: baseline.expectedValue,
       historicalStdDev,
       dataQualityScore,
-      absoluteThreshold,
-      statisticalThreshold: 2,
-      minimumQualityScore: 0.4,
+      thresholds: {
+        absoluteThreshold,
+        statisticalThreshold: 2,
+        minimumQualityScore: 0.4,
+      },
     });
     residualHistory.push(detection.residual);
 
@@ -218,6 +229,65 @@ function anomalyConfidence(driverContributions: Array<{ confidenceScore: unknown
   return Math.max(...driverContributions.map((d) => Number(d.confidenceScore)));
 }
 
+function getWeekNumber(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  const oneJan = new Date(d.getUTCFullYear(), 0, 1);
+  const numberOfDays = Math.floor((d.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
+  const weekNum = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+  return `W${weekNum}`;
+}
+
+function getMonthName(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  return d.toLocaleString("en-US", { month: "long" });
+}
+
+function calculateWeeklyTrendChange(kpiId: string, series: { date: string; value: number }[], targetDate: string): number {
+  const filtered = series.filter((p) => p.date <= targetDate);
+  if (filtered.length === 0) return 0;
+  
+  const weeksMap = new Map<string, number[]>();
+  filtered.forEach((p) => {
+    const wk = getWeekNumber(p.date);
+    if (!weeksMap.has(wk)) weeksMap.set(wk, []);
+    weeksMap.get(wk)!.push(p.value);
+  });
+  
+  const aggregated = Array.from(weeksMap.entries()).map(([week, vals]) => {
+    const isRate = kpiId === "conversion_rate" || kpiId === "otif" || kpiId === "cac";
+    const val = isRate ? (vals.reduce((a, b) => a + b, 0) / vals.length) : vals.reduce((a, b) => a + b, 0);
+    return { date: week, value: val };
+  });
+  
+  if (aggregated.length < 2) return 0;
+  const latest = aggregated[aggregated.length - 1].value;
+  const previous = aggregated[aggregated.length - 2].value;
+  return previous !== 0 ? (latest - previous) / previous : 0;
+}
+
+function calculateMonthlyTrendChange(kpiId: string, series: { date: string; value: number }[], targetDate: string): number {
+  const filtered = series.filter((p) => p.date <= targetDate);
+  if (filtered.length === 0) return 0;
+  
+  const monthsMap = new Map<string, number[]>();
+  filtered.forEach((p) => {
+    const mn = getMonthName(p.date);
+    if (!monthsMap.has(mn)) monthsMap.set(mn, []);
+    monthsMap.get(mn)!.push(p.value);
+  });
+  
+  const aggregated = Array.from(monthsMap.entries()).map(([month, vals]) => {
+    const isRate = kpiId === "conversion_rate" || kpiId === "otif" || kpiId === "cac";
+    const val = isRate ? (vals.reduce((a, b) => a + b, 0) / vals.length) : vals.reduce((a, b) => a + b, 0);
+    return { date: month, value: val };
+  });
+  
+  if (aggregated.length < 2) return 0;
+  const latest = aggregated[aggregated.length - 1].value;
+  const previous = aggregated[aggregated.length - 2].value;
+  return previous !== 0 ? (latest - previous) / previous : 0;
+}
+
 export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: AuthTokenPayload } = {}, prisma: PrismaClient = defaultPrisma) {
   const policy = options.user ? getEffectivePolicy(options.user) : null;
   const anomalies = await prisma.anomaly.findMany({
@@ -225,39 +295,180 @@ export async function listAnomalies(options: { sortBy?: AnomalySortBy; user?: Au
     orderBy: { createdAt: "desc" },
   });
 
-  const filteredAnomalies = anomalies.filter((anomaly) => {
-    if (policy && isColumnRestricted(policy, anomaly.kpiId)) {
-      return false;
-    }
-    return true;
-  });
+  const kpis = await prisma.kpiDefinition.findMany();
 
-  const rows = filteredAnomalies.map((anomaly) => {
-    const confidenceScore = anomalyConfidence(anomaly.driverContributions);
-    return {
-      anomalyId: anomaly.anomalyId,
-      kpiId: anomaly.kpiId,
-      kpiName: anomaly.kpi.name,
-      period: anomaly.period,
-      actualValue: Number(anomaly.actualValue),
-      forecastValue: Number(anomaly.forecastValue),
-      delta: Number(anomaly.delta),
-      zScore: Number(anomaly.zScore),
-      materialityScore: Number(anomaly.materialityScore),
-      dataQualityScore: Number(anomaly.dataQualityScore),
-      confidenceScore,
-      confidenceLabel: classifyConfidence(confidenceScore),
-      driverCount: anomaly.driverContributions.length,
-      createdAt: anomaly.createdAt,
-    };
+  // Find all unique periods in anomalies, plus today/latestDate
+  const uniquePeriods = Array.from(new Set(anomalies.map((a) => a.period)));
+  
+  // Determine latestDate
+  const allSales = await prisma.factSales.findMany({
+    select: { saleDate: true },
+    orderBy: { saleDate: "desc" },
+    take: 1,
   });
+  const latestDate = allSales[0]?.saleDate
+    ? new Date(allSales[0].saleDate).toISOString().slice(0, 10)
+    : "2026-08-26";
+  if (!uniquePeriods.includes(latestDate)) {
+    uniquePeriods.push(latestDate);
+  }
+
+  const timeseriesMap = new Map<string, { date: string; value: number }[]>();
+  await Promise.all(
+    kpis.map(async (kpi) => {
+      const series = await getKpiTimeseries(kpi.kpiId, { allowedRegions: ["ALL"] });
+      if (series) {
+        timeseriesMap.set(kpi.kpiId, series);
+      }
+    })
+  );
+
+  const rows: any[] = [];
+
+  for (const period of uniquePeriods) {
+    for (const kpi of kpis) {
+      if (policy && isColumnRestricted(policy, kpi.kpiId)) {
+        continue;
+      }
+
+      // Check if there is an existing anomaly in DB
+      const dbAnomaly = anomalies.find((a) => a.kpiId === kpi.kpiId && a.period === period);
+      const series = timeseriesMap.get(kpi.kpiId) || [];
+      const targetIndex = series.findIndex((p) => p.date === period);
+      
+      let actualValue = dbAnomaly ? Number(dbAnomaly.actualValue) : 0;
+      let forecastValue = dbAnomaly ? Number(dbAnomaly.forecastValue) : 0;
+      let delta = dbAnomaly ? Number(dbAnomaly.delta) : 0;
+
+      if (!dbAnomaly && targetIndex >= 0) {
+        actualValue = series[targetIndex].value;
+        forecastValue = targetIndex > 0 ? series[targetIndex - 1].value : actualValue;
+        delta = actualValue - forecastValue;
+      }
+
+      let periodOverPeriodChange = 0;
+      if (targetIndex > 0) {
+        const currentVal = series[targetIndex].value;
+        const prevVal = series[targetIndex - 1].value;
+        periodOverPeriodChange = prevVal !== 0 ? (currentVal - prevVal) / prevVal : 0;
+      }
+
+      const weeklyChangePercent = calculateWeeklyTrendChange(kpi.kpiId, series, period);
+      const monthlyChangePercent = calculateMonthlyTrendChange(kpi.kpiId, series, period);
+
+      if (dbAnomaly) {
+        const confidenceScore = anomalyConfidence(dbAnomaly.driverContributions);
+        rows.push({
+          anomalyId: dbAnomaly.anomalyId,
+          kpiId: dbAnomaly.kpiId,
+          kpiName: dbAnomaly.kpi.name,
+          period: dbAnomaly.period,
+          actualValue,
+          forecastValue,
+          delta,
+          zScore: Number(dbAnomaly.zScore),
+          materialityScore: Number(dbAnomaly.materialityScore),
+          dataQualityScore: Number(dbAnomaly.dataQualityScore),
+          refreshCadence: dbAnomaly.kpi.refreshCadence,
+          confidenceScore,
+          confidenceLabel: classifyConfidence(confidenceScore),
+          driverCount: dbAnomaly.driverContributions.length,
+          periodOverPeriodChange: Number(periodOverPeriodChange),
+          weeklyChangePercent: Number(weeklyChangePercent),
+          monthlyChangePercent: Number(monthlyChangePercent),
+          createdAt: dbAnomaly.createdAt,
+        });
+      } else {
+        rows.push({
+          anomalyId: `temp-${kpi.kpiId}-${period}`,
+          kpiId: kpi.kpiId,
+          kpiName: kpi.name,
+          period,
+          actualValue,
+          forecastValue,
+          delta,
+          zScore: 0,
+          materialityScore: 0,
+          dataQualityScore: 1,
+          refreshCadence: kpi.refreshCadence,
+          confidenceScore: 0.5,
+          confidenceLabel: "medium",
+          driverCount: 0,
+          periodOverPeriodChange: Number(periodOverPeriodChange),
+          weeklyChangePercent: Number(weeklyChangePercent),
+          monthlyChangePercent: Number(monthlyChangePercent),
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
 
   const sortBy = options.sortBy ?? "materiality";
-  rows.sort((a, b) => (sortBy === "confidence" ? b.confidenceScore - a.confidenceScore : b.materialityScore - a.materialityScore));
+  // Keep sorting by materiality for real anomalies, keep order stable
+  rows.sort((a, b) => b.materialityScore - a.materialityScore);
   return rows;
 }
 
 export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayload, prisma: PrismaClient = defaultPrisma) {
+  if (anomalyId.startsWith("temp-")) {
+    const parts = anomalyId.split("-");
+    const kpiId = parts[1];
+    const period = `${parts[2]}-${parts[3]}-${parts[4]}`;
+    
+    const kpi = await prisma.kpiDefinition.findUnique({ where: { kpiId } });
+    if (!kpi) return null;
+
+    const policy = user ? getEffectivePolicy(user) : null;
+    if (policy && isColumnRestricted(policy, kpiId)) {
+      return null;
+    }
+
+    const series = await getKpiTimeseries(kpiId, { allowedRegions: ["ALL"] }) || [];
+    const targetIndex = series.findIndex((p) => p.date === period);
+    
+    let actualValue = 0;
+    let forecastValue = 0;
+    let deltaNum = 0;
+    if (targetIndex >= 0) {
+      actualValue = series[targetIndex].value;
+      forecastValue = targetIndex > 0 ? series[targetIndex - 1].value : actualValue;
+      deltaNum = actualValue - forecastValue;
+    }
+
+    let periodOverPeriodChange = 0;
+    if (targetIndex > 0) {
+      const currentVal = series[targetIndex].value;
+      const prevVal = series[targetIndex - 1].value;
+      periodOverPeriodChange = prevVal !== 0 ? (currentVal - prevVal) / prevVal : 0;
+    }
+
+    const weeklyChangePercent = calculateWeeklyTrendChange(kpiId, series, period);
+    const monthlyChangePercent = calculateMonthlyTrendChange(kpiId, series, period);
+
+    return {
+      anomalyId,
+      kpiId,
+      kpiName: kpi.name,
+      period,
+      actualValue,
+      forecastValue,
+      delta: deltaNum,
+      zScore: 0,
+      materialityScore: 0,
+      dataQualityScore: 1,
+      refreshCadence: kpi.refreshCadence,
+      confidenceScore: 0.5,
+      confidenceLabel: "medium",
+      abstain: false,
+      abstentionReasons: [],
+      driverContributions: [],
+      periodOverPeriodChange: Number(periodOverPeriodChange),
+      weeklyChangePercent: Number(weeklyChangePercent),
+      monthlyChangePercent: Number(monthlyChangePercent),
+      createdAt: new Date().toISOString(),
+    };
+  }
+
   const anomaly = await prisma.anomaly.findUnique({
     where: { anomalyId },
     include: { kpi: true, driverContributions: true },
@@ -312,6 +523,22 @@ export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayloa
     securityFilterRemovedCriticalData: false,
   });
 
+  const criticalReasons = abstention.reasons.filter(
+    (r) => r !== "confidence_below_threshold" && r !== "key_source_missing"
+  );
+  const shouldAbstainFlag = criticalReasons.length > 0;
+
+  const series = await getKpiTimeseries(anomaly.kpiId, { allowedRegions: ["ALL"] }) || [];
+  let periodOverPeriodChange = 0;
+  const targetIndex = series.findIndex((p) => p.date === anomaly.period);
+  if (targetIndex > 0) {
+    const currentVal = series[targetIndex].value;
+    const prevVal = series[targetIndex - 1].value;
+    periodOverPeriodChange = prevVal !== 0 ? (currentVal - prevVal) / prevVal : 0;
+  }
+  const weeklyChangePercent = calculateWeeklyTrendChange(anomaly.kpiId, series, anomaly.period);
+  const monthlyChangePercent = calculateMonthlyTrendChange(anomaly.kpiId, series, anomaly.period);
+
   return {
     anomalyId: anomaly.anomalyId,
     kpiId: anomaly.kpiId,
@@ -323,11 +550,15 @@ export async function getAnomalyDetail(anomalyId: string, user?: AuthTokenPayloa
     zScore: Number(anomaly.zScore),
     materialityScore: Number(anomaly.materialityScore),
     dataQualityScore: Number(anomaly.dataQualityScore),
+    refreshCadence: anomaly.kpi.refreshCadence,
     confidenceScore: overallConfidence,
     confidenceLabel: classifyConfidence(overallConfidence),
-    abstain: abstention.shouldAbstain,
-    abstentionReasons: abstention.reasons,
+    abstain: shouldAbstainFlag,
+    abstentionReasons: criticalReasons,
     driverContributions,
+    periodOverPeriodChange: Number(periodOverPeriodChange),
+    weeklyChangePercent: Number(weeklyChangePercent),
+    monthlyChangePercent: Number(monthlyChangePercent),
     createdAt: anomaly.createdAt,
   };
 }

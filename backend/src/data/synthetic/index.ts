@@ -28,8 +28,8 @@ export function generateSyntheticDataset(referenceDate: Date = new Date(), seed:
   const plan = buildIncidentPlan(startDate, dimProducts, dimStores, dimCampaigns);
 
   const factInventory = generateFactInventory(rng, dates, dimProducts, dimStores, plan);
-  const factSales = generateFactSales(rng, dates, dimProducts, dimStores, factInventory, plan);
   const factMarketingSpend = generateFactMarketingSpend(rng, dates, dimCampaigns, plan);
+  const factSales = generateFactSales(rng, dates, dimProducts, dimStores, factInventory, plan);
   const factWebTraffic = generateFactWebTraffic(rng, dates, REGIONS, CHANNELS, plan);
   const factShipments = generateFactShipments(rng, dates, REGIONS);
   const sourceStatus = generateSourceStatus(rng, datasetEndDate, plan);

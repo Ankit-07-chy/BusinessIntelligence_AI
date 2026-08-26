@@ -35,9 +35,13 @@ export interface AnomalySummary {
   zScore: number;
   materialityScore: number;
   dataQualityScore: number;
+  refreshCadence: string;
   confidenceScore: number;
   confidenceLabel: ConfidenceLabel;
   driverCount: number;
+  periodOverPeriodChange: number;
+  weeklyChangePercent: number;
+  monthlyChangePercent: number;
   createdAt: string;
 }
 

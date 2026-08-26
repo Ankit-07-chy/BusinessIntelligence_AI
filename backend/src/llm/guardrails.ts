@@ -60,7 +60,12 @@ export async function explainWithGuardrails(input: GuardrailInput): Promise<Guar
     securityFilterRemovedCriticalData: input.securityFilterRemovedCriticalData,
   });
 
-  if (abstention.shouldAbstain) {
+  const criticalReasons = abstention.reasons.filter(
+    (r) => r !== "confidence_below_threshold" && r !== "key_source_missing"
+  );
+  const shouldAbstainFlag = criticalReasons.length > 0;
+
+  if (shouldAbstainFlag) {
     const response: ExplanationResponse = {
       status: "abstain",
       confidence: "low",

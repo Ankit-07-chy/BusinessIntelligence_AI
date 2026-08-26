@@ -24,7 +24,7 @@ function addDays(date: Date, days: number): Date {
 export function getDatasetStartDate(referenceDate: Date = new Date()): Date {
   const end = new Date(referenceDate);
   end.setUTCHours(0, 0, 0, 0);
-  return addDays(end, -TOTAL_DAYS);
+  return addDays(end, -TOTAL_DAYS + 1);
 }
 
 export function getDateRange(startDate: Date, totalDays: number): Date[] {

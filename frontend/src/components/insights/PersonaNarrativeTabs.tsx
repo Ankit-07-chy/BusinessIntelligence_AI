@@ -9,6 +9,7 @@ const PERSONA_LABELS: Record<PersonaId, string> = {
   supply_chain_manager: "Supply Chain",
   marketing_manager: "Marketing",
   analyst: "Analyst",
+  digital_product_manager: "Digital Product",
 };
 
 function isPersonaId(value: string): value is PersonaId {

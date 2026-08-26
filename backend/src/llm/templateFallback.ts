@@ -39,6 +39,12 @@ function buildSummary(persona: string, pack: EvidencePack): string {
       if (pack.recommended_actions[0]) text += ` Recommended action: ${pack.recommended_actions[0].action}.`;
       return text;
     }
+    case "digital_product_manager": {
+      let text = `${formatDriverLabel(pack.kpi_id)} shifted ${formatPercent(pack.delta_percent)} ${direction} forecast.`;
+      if (primary) text += ` Likely funnel driver: ${formatDriverLabel(primary.driver)}.`;
+      if (pack.recommended_actions[0]) text += ` Recommended action: ${pack.recommended_actions[0].action}.`;
+      return text;
+    }
     case "analyst":
     default: {
       let text = `Anomaly identified in ${pack.kpi_id} (confidence score: ${pack.confidence_score.toFixed(2)}, data quality: ${pack.data_quality_score.toFixed(2)}).`;

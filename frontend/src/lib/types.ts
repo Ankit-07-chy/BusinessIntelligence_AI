@@ -57,9 +57,15 @@ export interface AnomalyDetail extends AnomalySummary {
   driverContributions: DriverContribution[];
 }
 
-export type PersonaId = "cfo" | "supply_chain_manager" | "marketing_manager" | "analyst";
+export type PersonaId = "cfo" | "supply_chain_manager" | "marketing_manager" | "analyst" | "digital_product_manager";
 
-export const PERSONA_IDS: PersonaId[] = ["cfo", "supply_chain_manager", "marketing_manager", "analyst"];
+export const PERSONA_IDS: PersonaId[] = [
+  "cfo",
+  "supply_chain_manager",
+  "marketing_manager",
+  "analyst",
+  "digital_product_manager",
+];
 
 export interface EvidenceSource {
   source: string;

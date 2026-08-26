@@ -8,7 +8,7 @@ export const personasRouter = Router();
 personasRouter.use(requireAuth);
 
 personasRouter.get("/personas", (_req, res) => {
-  res.json(["cfo", "supply_chain_manager", "marketing_manager", "analyst"]);
+  res.json(["cfo", "supply_chain_manager", "marketing_manager", "analyst", "digital_product_manager"]);
 });
 
 personasRouter.get("/personas/:personaId/narrative", async (req, res, next) => {

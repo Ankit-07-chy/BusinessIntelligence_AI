@@ -9,6 +9,7 @@ const DEMO_USERS = [
   { username: "supply_chain_manager", label: "Supply Chain Manager" },
   { username: "marketing_manager", label: "Marketing Manager" },
   { username: "analyst", label: "Analyst" },
+  { username: "digital_product_manager", label: "Digital Product Manager" },
 ];
 
 export function LoginPage() {

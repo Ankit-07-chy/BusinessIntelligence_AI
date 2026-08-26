@@ -88,23 +88,28 @@ function processSeries(
   rawData: KpiTimeseriesPoint[] | undefined,
   viewMode: "daily" | "weekly" | "monthly",
   specificDate: string,
-  specificWeek: string,
+  weekStartDate: string,
   specificMonth: string
 ): KpiTimeseriesPoint[] {
   if (!rawData) return [];
-  
+
   let raw = [...rawData];
-  
+
   // Specific Date filter
   if (specificDate) {
     raw = raw.filter(p => p.date === specificDate);
   }
-  
-  // Specific Week filter
-  if (specificWeek) {
-    raw = raw.filter(p => getWeekNumber(p.date) === specificWeek);
+
+  // Specific Week (7-day start date crop) filter
+  if (weekStartDate) {
+    const start = new Date(`${weekStartDate}T00:00:00.000Z`);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    const startStr = start.toISOString().slice(0, 10);
+    const endStr = end.toISOString().slice(0, 10);
+    raw = raw.filter(p => p.date >= startStr && p.date <= endStr);
   }
-  
+
   // Specific Month filter
   if (specificMonth) {
     raw = raw.filter(p => getMonthName(p.date) === specificMonth);
@@ -136,12 +141,12 @@ function processSeries(
       return { date: month, value: val };
     });
   }
-  
+
   return raw;
-}export function DashboardPage() {
+} export function DashboardPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  
+
   // Split Compare and Zoom States
   const [compareMode, setCompareMode] = useState<boolean>(false);
   const [selectedKpiIds, setSelectedKpiIds] = useState<string[]>(["net_revenue"]);
@@ -150,7 +155,7 @@ function processSeries(
   // Filters state
   const [viewMode, setViewMode] = useState<"daily" | "weekly" | "monthly">("daily");
   const [specificDate, setSpecificDate] = useState<string>("");
-  const [specificWeek, setSpecificWeek] = useState<string>("");
+  const [weekStartDate, setWeekStartDate] = useState<string>("");
   const [specificMonth, setSpecificMonth] = useState<string>("");
 
   // Fetch KPI Definitions
@@ -182,11 +187,11 @@ function processSeries(
   });
 
   // Processed timeseries for dials and charts
-  const processedNetRevenue = useMemo(() => processSeries("net_revenue", netRevenueTimeseries.data, viewMode, specificDate, specificWeek, specificMonth), [netRevenueTimeseries.data, viewMode, specificDate, specificWeek, specificMonth]);
-  const processedGrossMargin = useMemo(() => processSeries("gross_margin", grossMarginTimeseries.data, viewMode, specificDate, specificWeek, specificMonth), [grossMarginTimeseries.data, viewMode, specificDate, specificWeek, specificMonth]);
-  const processedConversionRate = useMemo(() => processSeries("conversion_rate", conversionRateTimeseries.data, viewMode, specificDate, specificWeek, specificMonth), [conversionRateTimeseries.data, viewMode, specificDate, specificWeek, specificMonth]);
-  const processedOtif = useMemo(() => processSeries("otif", otifTimeseries.data, viewMode, specificDate, specificWeek, specificMonth), [otifTimeseries.data, viewMode, specificDate, specificWeek, specificMonth]);
-  const processedCac = useMemo(() => processSeries("cac", cacTimeseries.data, viewMode, specificDate, specificWeek, specificMonth), [cacTimeseries.data, viewMode, specificDate, specificWeek, specificMonth]);
+  const processedNetRevenue = useMemo(() => processSeries("net_revenue", netRevenueTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth), [netRevenueTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth]);
+  const processedGrossMargin = useMemo(() => processSeries("gross_margin", grossMarginTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth), [grossMarginTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth]);
+  const processedConversionRate = useMemo(() => processSeries("conversion_rate", conversionRateTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth), [conversionRateTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth]);
+  const processedOtif = useMemo(() => processSeries("otif", otifTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth), [otifTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth]);
+  const processedCac = useMemo(() => processSeries("cac", cacTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth), [cacTimeseries.data, viewMode, specificDate, weekStartDate, specificMonth]);
 
   const timeseriesMap: Record<string, { data: KpiTimeseriesPoint[] | undefined; processed: KpiTimeseriesPoint[]; isLoading: boolean }> = {
     net_revenue: { data: netRevenueTimeseries.data, processed: processedNetRevenue, isLoading: netRevenueTimeseries.isLoading },
@@ -203,11 +208,6 @@ function processSeries(
   const selectedKpiName = kpisQuery.data?.find((k) => k.kpiId === activeKpiId)?.name || "KPI";
 
   // Dynamic filter drop-down arrays based on loaded dataset
-  const availableWeeks = useMemo(() => {
-    if (!activeQuery.data) return [];
-    return Array.from(new Set(activeQuery.data.map(p => getWeekNumber(p.date)))).sort();
-  }, [activeQuery.data]);
-
   const availableMonths = useMemo(() => {
     if (!activeQuery.data) return [];
     return Array.from(new Set(activeQuery.data.map(p => getMonthName(p.date))));
@@ -227,11 +227,11 @@ function processSeries(
     ? (targetPoint.value - previousPoint.value) / previousPoint.value
     : null;
 
-  // 2. Calculations for Specific Week daily trend chart
+  // 2. Calculations for Specific Week daily trend chart (7-day date crop)
   const weekProcessedData = useMemo(() => {
-    if (!specificWeek || !activeQuery.data) return [];
-    return processSeries(activeKpiId, activeQuery.data, "daily", "", specificWeek, "");
-  }, [activeKpiId, activeQuery.data, specificWeek]);
+    if (!weekStartDate || !activeQuery.data) return [];
+    return processSeries(activeKpiId, activeQuery.data, "daily", "", weekStartDate, "");
+  }, [activeKpiId, activeQuery.data, weekStartDate]);
 
   // 3. Calculations for Specific Month dual charts
   const monthWeeklyData = useMemo(() => {
@@ -261,7 +261,7 @@ function processSeries(
 
   const handleResetFilters = () => {
     setSpecificDate("");
-    setSpecificWeek("");
+    setWeekStartDate("");
     setSpecificMonth("");
   };
 
@@ -269,9 +269,6 @@ function processSeries(
     <div className="space-y-8">
       {/* 5 Circular selectors at top */}
       <section className="flex flex-col items-center">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">Metrics Command Center</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">Select metric circles to analyze trends, or activate compare mode for split charts.</p>
-
         {/* Compare Mode Toggle Switch */}
         <div className="flex items-center gap-3 mb-6 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-2xl shadow-inner">
           <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Compare Split Mode</span>
@@ -284,14 +281,12 @@ function processSeries(
                 setSelectedKpiIds([selectedKpiIds[0]]);
               }
             }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition duration-300 ${
-              compareMode ? "bg-indigo-650" : "bg-slate-350 dark:bg-slate-700"
-            }`}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition duration-300 ${compareMode ? "bg-indigo-650" : "bg-slate-350 dark:bg-slate-700"
+              }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-300 ${
-                compareMode ? "translate-x-6" : "translate-x-1"
-              }`}
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-300 ${compareMode ? "translate-x-6" : "translate-x-1"
+                }`}
             />
           </button>
         </div>
@@ -319,20 +314,18 @@ function processSeries(
                 <div
                   key={kpi.kpiId}
                   onClick={() => handleDialClick(kpi.kpiId)}
-                  className={`w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full flex flex-col items-center justify-center p-4 cursor-pointer transition-all duration-300 border-2 text-center select-none relative ${
-                    isActive
-                      ? themeStyles.activeBg
-                      : `bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 ${themeStyles.hoverBorder}`
-                  }`}
+                  className={`flex-1 min-w-[180px] max-w-[240px] h-32 md:h-36 rounded-2xl flex flex-col items-center justify-center p-4 cursor-pointer transition-all duration-300 border-2 text-center select-none relative ${isActive
+                    ? themeStyles.activeBg
+                    : `bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 ${themeStyles.hoverBorder}`
+                    }`}
                 >
                   {/* Selection Indicator Checkbox */}
                   {compareMode && (
                     <div className="absolute top-2 right-2 md:top-3 md:right-3">
-                      <div className={`w-4.5 h-4.5 rounded-full flex items-center justify-center border text-[9px] font-bold shadow-sm transition ${
-                        isActive 
-                          ? "bg-white text-indigo-650 border-white" 
-                          : "border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 text-transparent"
-                      }`}>
+                      <div className={`w-4.5 h-4.5 rounded-full flex items-center justify-center border text-[9px] font-bold shadow-sm transition ${isActive
+                        ? "bg-white text-indigo-650 border-white"
+                        : "border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 text-transparent"
+                        }`}>
                         ✓
                       </div>
                     </div>
@@ -348,15 +341,14 @@ function processSeries(
                     {formatKpiValue(kpi.kpiId, latestValue)}
                   </span>
                   {changePercent !== null && (
-                    <span className={`mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      isActive 
-                        ? "bg-white/20 text-white" 
-                        : isZero 
-                          ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                          : isPositive
-                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
-                            : "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450"
-                    }`}>
+                    <span className={`mt-1.5 px-2 py-0.5 rounded-full text-[9px] font-bold ${isActive
+                      ? "bg-white/20 text-white"
+                      : isZero
+                        ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        : isPositive
+                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
+                          : "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450"
+                      }`}>
                       {!isZero && (isPositive ? "↑ " : "↓ ")}
                       {Math.abs(changePercent * 100).toFixed(1)}%
                     </span>
@@ -379,11 +371,10 @@ function processSeries(
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition ${
-                    viewMode === mode
-                      ? "bg-white dark:bg-slate-700 text-slate-950 dark:text-slate-50 shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md capitalize transition ${viewMode === mode
+                    ? "bg-white dark:bg-slate-700 text-slate-950 dark:text-slate-50 shadow-sm"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                    }`}
                 >
                   {mode}
                 </button>
@@ -395,7 +386,7 @@ function processSeries(
           <div className="flex flex-wrap items-end gap-4 flex-grow justify-start md:justify-end">
             {/* Specific Date */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Specific Date</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Select Date</label>
               <input
                 type="date"
                 min="2026-05-28"
@@ -409,27 +400,25 @@ function processSeries(
               />
             </div>
 
-            {/* Specific Week */}
+            {/* Specific Week (Start Date Picker) */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Specific Week</label>
-              <select
-                value={specificWeek}
+              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Select Week Start</label>
+              <input
+                type="date"
+                min="2026-05-28"
+                max="2026-08-25"
+                value={weekStartDate}
                 onChange={(e) => {
                   handleResetFilters();
-                  setSpecificWeek(e.target.value);
+                  setWeekStartDate(e.target.value);
                 }}
                 className="rounded-lg border border-slate-350 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 transition"
-              >
-                <option value="">All Weeks</option>
-                {availableWeeks.map(wk => (
-                  <option key={wk} value={wk}>{wk}</option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Specific Month */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Specific Month</label>
+              <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 block">Select Month</label>
               <select
                 value={specificMonth}
                 onChange={(e) => {
@@ -446,7 +435,7 @@ function processSeries(
             </div>
 
             {/* Clear Button */}
-            {(specificDate || specificWeek || specificMonth) && (
+            {(specificDate || weekStartDate || specificMonth) && (
               <button
                 onClick={handleResetFilters}
                 className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-450 text-xs font-semibold rounded-lg transition"
@@ -464,9 +453,7 @@ function processSeries(
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Split Screen Comparison Mode
-              </span>
+
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Analyzing {selectedKpiIds.length} Metrics in Parallel
               </h2>
@@ -587,13 +574,12 @@ function processSeries(
                       </p>
                       {targetChangePercent !== null && (
                         <div className="mt-4 flex items-center justify-center">
-                          <span className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1 text-sm font-extrabold leading-none ${
-                            (activeKpiId === "cac" ? targetChangePercent < 0 : targetChangePercent > 0)
-                              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-450"
-                              : targetChangePercent === 0
-                                ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                                : "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450"
-                          }`}>
+                          <span className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1 text-sm font-extrabold leading-none ${(activeKpiId === "cac" ? targetChangePercent < 0 : targetChangePercent > 0)
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-450"
+                            : targetChangePercent === 0
+                              ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                              : "bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-450"
+                            }`}>
                             {targetChangePercent > 0 ? "↑ " : targetChangePercent < 0 ? "↓ " : ""} {Math.abs(targetChangePercent * 100).toFixed(1)}%
                           </span>
                           <span className="text-xs text-slate-400 dark:text-slate-500 ml-2 font-medium">vs. previous day</span>
@@ -723,17 +709,17 @@ function processSeries(
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6">
                 <div>
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 capitalize">
-                    Trend Analysis · {specificWeek ? "Weekly Period" : `${viewMode} reporting`}
+                    Trend Analysis · {weekStartDate ? "Weekly Period" : `${viewMode} reporting`}
                   </span>
                   <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                    {selectedKpiName} {specificWeek ? `(${specificWeek})` : "History"}
+                    {selectedKpiName} {weekStartDate ? `(Starting ${weekStartDate})` : "History"}
                   </h2>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: activeTheme.stroke }} />
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                    {specificWeek ? "Daily Trend of the Week" : viewMode === "daily" ? "Daily Actuals" : `${viewMode} aggregates`}
+                    {weekStartDate ? "Daily Trend (7 Days)" : viewMode === "daily" ? "Daily Actuals" : `${viewMode} aggregates`}
                   </span>
                 </div>
               </div>
@@ -743,9 +729,9 @@ function processSeries(
                   <div className="flex h-full items-center justify-center">
                     <p className="text-sm text-slate-500 animate-pulse">Loading timeseries data…</p>
                   </div>
-                ) : (specificWeek ? weekProcessedData.length > 0 : processedData.length > 0) ? (
+                ) : (weekStartDate ? weekProcessedData.length > 0 : processedData.length > 0) ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={specificWeek ? weekProcessedData : processedData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <AreaChart data={weekStartDate ? weekProcessedData : processedData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={activeTheme.stopStart} stopOpacity={0.3} />

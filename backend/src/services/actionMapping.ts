@@ -38,6 +38,16 @@ const ACTION_TEMPLATE_FILES = [
   "actions/new_customer_volume.yaml",
   "actions/insufficient_evidence.yaml",
   "actions/paid_search_expansion.yaml",
+  "actions/carrier_delay.yaml",
+  "actions/checkout_funnel_drop.yaml",
+  "actions/creative_fatigue.yaml",
+  "actions/data_pipeline_delay.yaml",
+  "actions/new_product_sparse_history.yaml",
+  "actions/price_increase_demand_drop.yaml",
+  "actions/promotion_cannibalization.yaml",
+  "actions/traffic_quality_decline.yaml",
+  "actions/warehouse_capacity_constraint.yaml",
+  "actions/website_outage.yaml",
 ];
 
 let cache: Map<string, ActionTemplate> | null = null;

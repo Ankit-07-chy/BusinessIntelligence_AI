@@ -31,81 +31,50 @@ graph TD
 
 ---
 
-## 2. Authentication & Session Control
-
-*   **Prototype Framework**: Authentication uses demo user profiles mapped to distinct operational roles. Upon login, the system generates a standard **JWT Token** containing the user's ID, username, persona, and authorized geographical region.
-*   **Production Setup**: The system is designed to delegate authentication to an enterprise Identity Provider (IdP) via OAuth 2.0 and OpenID Connect (OIDC) (e.g., Okta, Auth0, Entra ID) using JSON Web Keys (JWKS) validation and mandatory Multi-Factor Authentication (MFA).
-
----
-
-## 3. Authorization & Access Governance
-
-We implement a combination of Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) to restrict data access.
-
-### 3.1 Row-Level Security (RLS)
-Row-Level Security controls which records a user can view based on their attributes (such as geography or department).
-*   **Implementation**: Database repository classes automatically inject region restrictions into SQL query clauses using values parsed from the validated JWT token:
+## 2. Row-Level Security (RLS)
+Row-Level Security controls which records a user can view based on their geographic scopes.
+*   **Implementation**: Database query classes filter records based on the validated user region.
     ```sql
-    -- Example repository filter execution
     SELECT * FROM fact_sales 
     WHERE region IN (:user_allowed_regions);
     ```
-*   **Example Case**: A regional Supply Chain Manager for the EU can only access data where the region column matches `EU`. US-based store records are completely excluded from the query results.
-
-### 3.2 Column-Level Security (CLS)
-Column-Level Security hides specific fields (like margins, product cost, or pricing formulas) from unauthorized roles.
-*   **Implementation**: The backend `security_service.py` evaluates the semantic policy rules and removes restricted fields from the data payload before compiling the LLM Evidence Pack.
-*   **Example Case**: While the CFO has access to `gross_margin` and `discount_amount` across all metrics, these fields are completely removed when generating insight narratives for the Marketing Manager or external coordinators.
+*   **Reconciliation Rules**: A user's effective region scope is the intersection of their role-level boundaries and user-level constraints:
+    $$\text{Effective Scope} = \text{Role Scopes} \cap \text{User Scopes}$$
 
 ---
 
-## 4. Protected Domains & Restricted Fields
-
-To ensure security compliance, the engine blocks access to sensitive business domains by default. If a query or chat request references these topics, the engine triggers an abstention error:
-
-*   **Executive Compensation**: Salary levels, bonuses, and equity structures.
-*   **Customer PII**: Raw customer emails, phone numbers, addresses, and credit card profiles.
-*   **Supplier Contract Terms**: Specific margin negotiations and vendor contracts.
-*   **Mergers & Acquisitions (M&A)**: Corporate planning files and strategic valuation logs.
-*   **Legal Investigations**: Open litigation data or compliance audit logs.
+## 3. Column-Level Security (CLS)
+Column-Level Security hides specific tables and columns (like margin, COGS, or raw cost values) from unauthorized roles:
+*   **Implementation**: Centralized policy definitions map exact column exclusions (e.g. `fact_sales.cogs` or `dim_product.cost`).
+*   **Application to LLM**: Masked columns are stripped out *prior* to generating the Evidence Pack JSON. This prevents data leaks via prompt text.
 
 ---
 
-## 5. Security Audit Logging
+## 4. central Role Policies Definition (`role_policies.yaml`)
 
-The backend records all access attempts and security actions in an immutable database audit log. This audit record tracks:
-
-```text
-├── Timestamp: ISO-8601 (e.g., "2026-08-23T17:07:34Z")
-├── User Identification: User ID & Username
-├── Role / Persona: The active persona (e.g., "marketing_manager")
-├── API Path: Endpoint path (e.g., "GET /api/v1/anomalies/123")
-├── Row Filter Applied: List of regions filtered (e.g., ["EU"])
-├── Columns Masked: Fields removed (e.g., ["gross_margin", "cogs"])
-├── IP Address & User Agent: Network metadata
-└── Security Status: "SUCCESS" or "BLOCKED_DOMAIN_BREACH"
-```
-
----
-
-## 6. Access Policy Definition Example
-
-The governance policies are declared in a centralized semantic YAML configuration:
+Governance policies are enforced backend-wide using the central `role_policies.yaml` contract. The model applies data classifications (PII, legal, mergers) to users:
 
 ```yaml
+version: 1.2.0
+default_policy: deny
+audit_all_access: true
+
 role_policies:
   cfo:
-    allowed_regions: ["ALL"]
-    restricted_columns: []
-    blocked_domains: ["executive_compensation", "pii"]
-  
+    row_level_security:
+      region_scope: ALL
+    column_access:
+      allow:
+        - fact_sales.net_revenue
+        - fact_sales.gross_margin
+        - fact_sales.cogs
   supply_chain_manager:
-    allowed_regions: ["EU", "US"]
-    restricted_columns: ["gross_margin", "cogs", "discount_amount"]
-    blocked_domains: ["executive_compensation", "pii", "ma_planning"]
-    
-  marketing_manager:
-    allowed_regions: ["ALL"]
-    restricted_columns: ["gross_margin", "cogs", "otif"]
-    blocked_domains: ["executive_compensation", "pii", "legal"]
+    row_level_security:
+      region_scope: [EU, US]
+    column_access:
+      deny:
+        - fact_sales.gross_margin
+        - fact_sales.cogs
+        - dim_product.cost
 ```
+For the full schema, see [`role_policies.yaml`](file:///c:/Users/ankit/Desktop/BusinessIntelligence_AI/semantic/security/role_policies.yaml).

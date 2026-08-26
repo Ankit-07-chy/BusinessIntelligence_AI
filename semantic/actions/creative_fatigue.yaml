@@ -1,0 +1,7 @@
+driver_id: creative_fatigue
+lever: creative_optimization
+action: Refresh underperforming ad creatives and test new variants for campaigns with declining click-through or conversion efficiency
+owner_persona: marketing_manager
+expected_impact_range: [25000, 70000]
+confidence: medium
+monitoring_plan: Track click-through rate, conversion rate, CAC, and frequency by campaign daily for 7 days

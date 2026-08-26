@@ -1,0 +1,7 @@
+driver_id: price_increase_demand_drop
+lever: pricing
+action: Review recent price increases on affected SKUs and evaluate demand elasticity before maintaining or rolling back prices
+owner_persona: cfo
+expected_impact_range: [40000, 120000]
+confidence: medium
+monitoring_plan: Track price, units sold, conversion rate, revenue, and gross margin by SKU daily for 7 days

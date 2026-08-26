@@ -1,14 +1,93 @@
 persona_id: analyst
 name: Analyst
+description: Validation persona focused on evidence, methodology, lineage, confidence calibration, and alternative hypotheses.
+is_active: true
+
 focus:
   - evidence
   - methodology
   - lineage
   - confidence
   - alternative_hypotheses
+  - data_quality
+  - source_freshness
+
+primary_kpis:
+  - net_revenue
+  - gross_margin
+  - conversion_rate
+  - cac
+  - otif
+
+secondary_kpis: []
+
 level_of_detail: raw_logs_and_methodology
-narrative_strategy: mathematical_analytical_transparent
+
+narrative_preferences:
+  tone: analytical
+  style: transparent
+  start_with: evidence_summary
+  include_evidence: true
+  include_uncertainty: true
+  include_methods: true
+  include_assumptions: true
+  include_alternative_hypotheses: true
+  avoid:
+    - executive_only_summary
+    - unsupported_recommendations
+
 preferred_actions:
-  - calibration
-  - manual_adjustment
-access_scope: full_structural_view
+  - validate_data
+  - request_missing_evidence
+  - calibrate_threshold
+  - correct_driver_ranking
+  - flag_false_positive
+  - rerun_explanation
+
+restricted_columns:
+  - customer_pii
+  - employee_compensation
+  - legal_case_data
+
+access_policy:
+  row_level:
+    regions: all_permitted_by_user
+  column_level:
+    allow:
+      - analytical_metrics
+      - source_metadata
+      - model_output
+      - evidence_payload
+    deny:
+      - customer_pii
+      - employee_compensation
+      - legal_case_data
+  domain_level:
+    allow:
+      - analytics
+      - data_quality
+      - model_evaluation
+    deny:
+      - executive_compensation
+      - legal
+
+decision_rights:
+  can_accept_action: false
+  can_approve_budget_change: false
+  can_correct_driver: true
+  can_request_data_validation: true
+
+feedback_permissions:
+  can_correct_driver: true
+  can_accept_action: false
+  can_confirm_outcome: false
+  can_flag_model_issue: true
+
+escalation:
+  escalate_to: data_governance
+  when:
+    - data_quality_failure
+    - conflicting_evidence
+    - model_drift_suspected
+
+version: 1.1.0

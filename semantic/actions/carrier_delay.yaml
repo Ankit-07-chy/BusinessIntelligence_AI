@@ -1,0 +1,7 @@
+driver_id: carrier_delay
+lever: carrier_management
+action: Escalate delayed carrier, reroute affected orders, and adjust delivery promises where carrier performance is below SLA
+owner_persona: supply_chain_manager
+expected_impact_range: [30000, 90000]
+confidence: medium
+monitoring_plan: Track carrier on-time rate, delayed shipment count, OTIF, and customer delivery complaints daily for 5 days

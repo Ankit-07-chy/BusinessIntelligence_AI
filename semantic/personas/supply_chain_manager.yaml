@@ -1,14 +1,94 @@
 persona_id: supply_chain_manager
 name: Supply Chain Manager
+description: Operational persona focused on stockouts, inventory, replenishment, fulfillment, and OTIF.
+is_active: true
+
 focus:
   - stockouts
   - inventory
   - replenishment
   - store_sku_detail
   - fulfillment
+  - otif
+  - warehouse_capacity
+  - carrier_performance
+
+primary_kpis:
+  - otif
+
+secondary_kpis:
+  - net_revenue
+
 level_of_detail: sku_store_level
-narrative_strategy: operational_detail_oriented_tactical
+
+narrative_preferences:
+  tone: operational
+  style: tactical
+  start_with: operational_impact
+  include_evidence: true
+  include_uncertainty: true
+  include_actions: true
+  avoid:
+    - executive_margin_detail
+    - supplier_contract_terms
+
 preferred_actions:
   - expedite_purchase_order
   - reallocate_inventory
-access_scope: regional_store_focus
+  - escalate_carrier
+  - rebalance_warehouse_capacity
+  - adjust_delivery_promise
+  - prioritize_orders
+
+restricted_columns:
+  - fact_sales.cogs
+  - fact_sales.gross_margin
+  - fact_orders.cogs
+  - fact_orders.gross_margin
+  - dim_product.cost
+
+access_policy:
+  row_level:
+    regions: permitted_regions_only
+  column_level:
+    allow:
+      - stockout_flag
+      - units_on_hand
+      - units_available
+      - lost_sales_estimated_units
+      - net_revenue
+      - otif
+      - carrier_name
+      - warehouse_id
+    deny:
+      - cogs
+      - gross_margin
+      - supplier_cost
+      - customer_pii
+  domain_level:
+    allow:
+      - inventory
+      - fulfillment
+      - sales_operational
+    deny:
+      - finance_margin_detail
+
+decision_rights:
+  can_accept_action: true
+  can_approve_budget_change: false
+  expedite_cost_limit_usd: 10000
+  requires_approval_above_usd: 10000
+
+feedback_permissions:
+  can_correct_driver: true
+  can_accept_action: true
+  can_confirm_outcome: true
+
+escalation:
+  escalate_to: cfo
+  when:
+    - expedite_cost_above_limit
+    - multi_region_stockout
+    - major_otif_failure
+
+version: 1.1.0

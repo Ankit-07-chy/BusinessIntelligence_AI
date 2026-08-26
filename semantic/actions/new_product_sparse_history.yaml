@@ -1,0 +1,7 @@
+driver_id: new_product_sparse_history
+lever: new_product_monitoring
+action: Use analogous products and category baselines to monitor the new product; avoid aggressive corrective action until sufficient history exists
+owner_persona: analyst
+expected_impact_range: [0, 0]
+confidence: low
+monitoring_plan: Track sales, stockout rate, conversion rate, and return rate for the new product daily for 14 days

@@ -1,0 +1,7 @@
+driver_id: promotion_cannibalization
+lever: promotion_management
+action: Review overlapping promotions and discount stacks; correct rules that cannibalize margin or shift demand to lower-margin SKUs
+owner_persona: cfo
+expected_impact_range: [30000, 100000]
+confidence: medium
+monitoring_plan: Track discount rate, product mix, gross margin, and revenue by SKU and category daily for 7 days

@@ -1,7 +1,7 @@
 driver_id: payment_failure
 lever: payment_reliability
 action: Investigate payment gateway failure rates and restore affected payment methods or providers
-owner_persona: marketing_manager
+owner_persona: digital_product_manager
 expected_impact_range: [30000, 75000]
 confidence: high
 monitoring_plan: Track payment success rate, checkout completion, and conversion rate daily for 5 days

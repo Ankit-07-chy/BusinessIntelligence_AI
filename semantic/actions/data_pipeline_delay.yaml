@@ -1,0 +1,7 @@
+driver_id: data_pipeline_delay
+lever: data_reliability
+action: Do not make material decisions until delayed source data is restored; escalate pipeline repair and reevaluate after refresh
+owner_persona: analyst
+expected_impact_range: [0, 0]
+confidence: low
+monitoring_plan: Track source freshness, row counts, data quality score, and pipeline status until source is fresh

@@ -63,6 +63,10 @@ export async function buildEvidencePackForAnomaly(
     })
     .filter((action): action is NonNullable<typeof action> => action !== null);
 
+  const priorPeriodValue = anomaly.periodOverPeriodChange !== 0
+    ? anomaly.actualValue / (1 + anomaly.periodOverPeriodChange)
+    : anomaly.actualValue;
+
   const evidencePack = buildEvidencePack({
     anomaly: {
       kpiId: anomaly.kpiId,
@@ -72,6 +76,8 @@ export async function buildEvidencePackForAnomaly(
       delta: anomaly.delta,
       confidenceScore: anomaly.confidenceScore,
       dataQualityScore: anomaly.dataQualityScore,
+      priorPeriodValue,
+      periodOverPeriodChange: anomaly.periodOverPeriodChange,
     },
     drivers,
     sources,

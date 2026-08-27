@@ -5,7 +5,6 @@ import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InsightsPage } from "./pages/InsightsPage";
 import { InsightDetailPage } from "./pages/InsightDetailPage";
-import { ChatPage } from "./pages/ChatPage";
 import { PersonasPage } from "./pages/PersonasPage";
 import { ActionsPage } from "./pages/ActionsPage";
 import { FeedbackPage } from "./pages/FeedbackPage";
@@ -28,7 +27,6 @@ export function AppRouter() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/insights" element={<InsightsPage />} />
         <Route path="/insights/:id" element={<InsightDetailPage />} />
-        <Route path="/chat" element={<ChatPage />} />
         <Route path="/personas" element={<PersonasPage />} />
         <Route path="/actions" element={<ActionsPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />

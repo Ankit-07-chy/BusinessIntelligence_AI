@@ -1,7 +1,7 @@
 driver_id: margin_compression_pricing
 lever: pricing
-action: Review discount depth on affected SKUs and correct any unintended promotional overlap
+action: Check the discount rates on these items to make sure promotions aren't overlapping incorrectly
 owner_persona: cfo
 expected_impact_range: [50000, 120000]
 confidence: medium
-monitoring_plan: Track gross margin and discount rate by SKU daily for 7 days after the price correction
+monitoring_plan: Check margins and discounts on these items every day for 7 days

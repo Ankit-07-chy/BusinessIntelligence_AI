@@ -8,6 +8,8 @@ export interface EvidenceAnomalyInput {
   delta: number;
   confidenceScore: number;
   dataQualityScore: number;
+  priorPeriodValue: number;
+  periodOverPeriodChange: number;
 }
 
 export interface EvidenceDriverInput {
@@ -72,5 +74,7 @@ export function buildEvidencePack(input: BuildEvidencePackInput): EvidencePack {
     drivers: evidenceDrivers,
     unexplained_residual: unexplainedResidual,
     recommended_actions: recommendedActions,
+    prior_period_value: anomaly.priorPeriodValue,
+    period_over_period_change: anomaly.periodOverPeriodChange,
   };
 }

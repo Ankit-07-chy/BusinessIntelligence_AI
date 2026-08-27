@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { Button } from "../ui/Button";
+import { useAuth } from "../../hooks/useAuth";
 import type { ActionRecommendation } from "../../lib/types";
 
 const STATUS_STYLES: Record<string, string> = {
@@ -11,6 +12,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function ActionPlan({ anomalyId }: { anomalyId: string }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const actionsQuery = useQuery({
     queryKey: ["actions", anomalyId],
@@ -26,9 +28,9 @@ export function ActionPlan({ anomalyId }: { anomalyId: string }) {
   if (actionsQuery.isLoading) return <p className="text-sm text-slate-500">Loading recommended actions…</p>;
   if (actionsQuery.isError) return <p className="text-sm text-red-600">Failed to load actions.</p>;
 
-  const actions = actionsQuery.data ?? [];
+  const actions = (actionsQuery.data ?? []).filter((action) => action.ownerPersona === user?.persona);
   if (actions.length === 0) {
-    return <p className="text-sm text-slate-500">No actions recommended — insufficient confidence to act on.</p>;
+    return <p className="text-sm text-slate-500">No actions recommended for your role.</p>;
   }
 
   return (

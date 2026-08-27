@@ -107,6 +107,8 @@ export interface EvidencePack {
   drivers: EvidenceDriverItem[];
   unexplained_residual: number;
   recommended_actions: EvidenceRecommendedActionItem[];
+  prior_period_value: number;
+  period_over_period_change: number;
 }
 
 export interface ExplanationPrimaryDriver {

@@ -1,7 +1,7 @@
 driver_id: paid_search_expansion
 lever: marketing_budget_scaling
-action: Maintain the increased paid search budget and monitor CAC efficiency to scale it further across other regions
+action: Keep the increased Google Ads budget and see if it makes sense to scale it to other regions
 owner_persona: marketing_manager
 expected_impact_range: [50000, 120000]
 confidence: high
-monitoring_plan: Track daily paid-search spend, sessions, and revenue for 7 days
+monitoring_plan: Watch Google Ads spend and daily revenue for 7 days

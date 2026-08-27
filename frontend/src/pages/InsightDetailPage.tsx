@@ -7,6 +7,7 @@ import { DriverList } from "../components/insights/DriverList";
 import { PersonaNarrativeTabs } from "../components/insights/PersonaNarrativeTabs";
 import { ActionPlan } from "../components/insights/ActionPlan";
 import { FeedbackPanel } from "../components/feedback/FeedbackPanel";
+import { InsightChatWidget } from "../components/insights/InsightChatWidget";
 import type { AnomalyDetail } from "../lib/types";
 
 function formatPeriodText(period: string, cadence: "daily" | "weekly" | "monthly"): string {
@@ -140,6 +141,9 @@ export function InsightDetailPage() {
       <section className="border-t border-slate-100 dark:border-slate-800/80 pt-6">
         <FeedbackPanel anomalyId={id} driverOptions={driverOptions} />
       </section>
+
+      {/* Contextual chatbot widget */}
+      <InsightChatWidget anomalyId={id} />
     </div>
   );
 }

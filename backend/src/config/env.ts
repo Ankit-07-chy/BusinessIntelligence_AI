@@ -4,7 +4,7 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["local", "test", "production"]).default("local"),
   PORT: z.coerce.number().default(8000),
-  APP_NAME: z.string().default("KPI Intelligence Engine"),
+  APP_NAME: z.string().default("Smart BI"),
   API_V1_PREFIX: z.string().default("/api/v1"),
   DATABASE_URL: z.string(),
   CORS_ORIGINS: z.string().default("http://localhost:5173"),

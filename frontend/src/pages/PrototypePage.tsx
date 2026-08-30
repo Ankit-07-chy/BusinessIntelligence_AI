@@ -43,19 +43,19 @@ const SCENES = [
   { id: 12, title: "12. Executive Insight", subtitle: "Final actionable intelligence & recommendations", duration: 9 },
 ];
 
-const PRESENTER_SCRIPTS: Record<number, string> = {
-  1: "We start with business data flowing from three core sources: sales transactions, warehouse inventory, and marketing campaigns.",
-  2: "The engine aggregates raw sales into governed KPIs. Net Revenue is computed deterministically: Gross Revenue minus Discounts and Returns, yielding 420 thousand dollars.",
-  3: "Next, we calculate the expected baseline using OLS linear regression over same-weekday history with 7-day and 28-day seasonality adjustments, giving an expected 840 thousand dollars.",
-  4: "We compare actual revenue of 420K against expected revenue of 840K. This reveals a material revenue drop of 420 thousand dollars, or 50% below baseline.",
-  5: "We test if this drop is statistically unusual. The residual divided by trailing standard deviation produces a Z-score of -3.4, exceeding our 2.0 threshold, so we flag it as an anomaly.",
-  6: "To find why it happened, the engine conducts control-store counterfactual analysis, isolating inventory stockouts and paid-search marketing spend cuts.",
-  7: "The system attributes the 420K drop: 300K, or 71.4%, is driven by top SKU stockouts, while 120K, or 28.6%, is driven by the paid search spend cut.",
-  8: "Before outputting insights, we evaluate evidence reliability. Combining statistical strength, data quality, model fit, and freshness yields an 82% High Confidence score.",
-  9: "The safety gate checks quality and confidence rules. Since all safety criteria pass, the system proceeds to generate recommendations without abstaining.",
-  10: "All deterministic findings, drivers, and confidence metrics are aggregated into a single structured Evidence Pack JSON object.",
-  11: "Only now is the LLM invoked. Guided by strict evidence-only prompts, it formats the Evidence Pack into a persona-specific human narrative without inventing numbers.",
-  12: "Finally, the executive dashboard presents the complete intelligence card: root causes, high confidence, and immediate recommended actions for supply chain and marketing managers."
+const STAGE_EXPLANATIONS: Record<number, string> = {
+  1: "The analysis begins with multi-source business signals ingested from sales transactions, warehouse inventory, and marketing campaigns.",
+  2: "Raw sales data is aggregated into governed KPIs. Net Revenue is computed deterministically: Gross Revenue minus Discounts and Returns ($420K).",
+  3: "The expected baseline is computed using OLS linear regression over same-weekday history with 7-day and 28-day seasonality adjustments ($840K).",
+  4: "Actual revenue ($420K) is evaluated against expected baseline ($840K), revealing a material revenue variance of -$420K (-50%).",
+  5: "The residual divided by trailing standard deviation yields a Z-score of -3.4, exceeding the ±2.0 threshold and triggering an anomaly alert.",
+  6: "The engine runs counterfactual control-store comparison to isolate root causes: top SKU stockouts and paid-search marketing spend cuts.",
+  7: "The revenue drop is attributed proportionally: 71.4% ($300K) driven by SKU stockouts and 28.6% ($120K) driven by the paid search spend cut.",
+  8: "Combining statistical strength, data quality, model fit, and freshness yields an 82% High Confidence score and High Materiality level.",
+  9: "The safety gate verifies data completeness and confidence thresholds. All checks pass, approving automated recommendation generation.",
+  10: "All deterministic statistical findings, drivers, and metrics are compiled into a ground-truth JSON Evidence Pack.",
+  11: "The LLM synthesizes the Evidence Pack into a persona-specific executive narrative, bounded strictly by ground-truth numbers.",
+  12: "The final intelligence summary provides root cause findings, confidence ratings, and persona-specific action recommendations."
 };
 
 interface PrototypeData {
@@ -359,7 +359,7 @@ export function PrototypePage() {
                   : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
               }`}
             >
-              <FileText size={14} /> Script
+              <FileText size={14} /> Details
             </button>
             <button
               onClick={toggleFullscreen}
@@ -899,11 +899,11 @@ export function PrototypePage() {
               <FileText size={16} />
             </div>
             <div className="flex-1">
-              <div className="text-[11px] font-bold text-purple-400 tracking-wider">
-                PRESENTER VOICEOVER SCRIPT — SCENE {currentScene}:
+              <div className="text-[11px] font-bold text-purple-400 tracking-wider uppercase">
+                Pipeline Stage Explanation — Stage {currentScene}:
               </div>
-              <p className="text-xs text-slate-200 mt-0.5 leading-relaxed font-sans italic">
-                "{PRESENTER_SCRIPTS[currentScene]}"
+              <p className="text-xs text-slate-200 mt-0.5 leading-relaxed font-sans">
+                {STAGE_EXPLANATIONS[currentScene]}
               </p>
             </div>
           </div>

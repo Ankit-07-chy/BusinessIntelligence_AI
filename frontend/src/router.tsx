@@ -11,6 +11,7 @@ import { FeedbackPage } from "./pages/FeedbackPage";
 import { TelemetryPage } from "./pages/TelemetryPage";
 import { SecurityPage } from "./pages/admin/SecurityPage";
 import { UsersPage } from "./pages/admin/UsersPage";
+import { PrototypePage } from "./pages/PrototypePage";
 
 function ProtectedLayout() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/prototype" element={<PrototypePage />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />

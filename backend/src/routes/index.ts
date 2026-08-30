@@ -13,6 +13,8 @@ import { securityRouter } from "./v1/security.js";
 import { telemetryRouter } from "./v1/telemetry.js";
 import { usersRouter } from "./v1/users.js";
 
+import { prototypeRouter } from "./v1/prototype.js";
+
 export const apiV1Router = Router();
 
 apiV1Router.use(healthRouter);
@@ -28,3 +30,5 @@ apiV1Router.use(feedbackRouter);
 apiV1Router.use(telemetryRouter);
 apiV1Router.use(securityRouter);
 apiV1Router.use(adminRouter);
+apiV1Router.use(prototypeRouter);
+

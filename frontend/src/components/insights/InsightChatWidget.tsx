@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
 import { Bot, Send, X, Maximize2, Minimize2, MessageSquare, Loader2 } from "lucide-react";
 import type { ChatResponse } from "../../lib/types";
 
@@ -12,7 +11,6 @@ interface MessageTurn {
 }
 
 export function InsightChatWidget({ anomalyId }: { anomalyId: string }) {
-  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [inputValue, setInputValue] = useState("");

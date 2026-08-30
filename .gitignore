@@ -1,17 +1,19 @@
 node_modules/
 dist/
 build/
+coverage/
+.cache/
 .env
 .env.local
-.venv
 *.log
 .DS_Store
 Thumbs.db
+*.tmp
+scratch/
 
 # Prisma
 backend/prisma/dev.db
 backend/.env
-backend/prisma/migrations/
 
 # Generated data
 data/generated/
@@ -21,9 +23,15 @@ data/parquet/
 .vscode/
 .idea/
 
-# Phase files
+# Temporary / Scratch Files
 phase*.md
 phase (1).md
+*.excalidraw
 
-#frontend
+# Documentation
+docs/
+
+# Frontend
 frontend/.env
+frontend/.env.local
+frontend/dist/

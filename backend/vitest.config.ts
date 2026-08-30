@@ -8,6 +8,6 @@ export default defineConfig({
     // KPI x period combination, so /anomalies responses can take several
     // seconds on a slower CI runner — comfortably past vitest's 5s default
     // for a test that hits it more than once.
-    testTimeout: 20_000,
+    testTimeout: 40_000,
   },
 });

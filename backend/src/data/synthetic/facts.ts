@@ -18,6 +18,14 @@ function weekdayMultiplier(date: Date): number {
   return WEEKDAY_MULTIPLIER[date.getUTCDay()];
 }
 
+// Sat/Sun only — used to confine sales fluctuation to weekends, per request.
+function isWeekend(date: Date): boolean {
+  const day = date.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+const WEEKEND_SALES_MULTIPLIER = 1.15;
+
 function isSparseRow(product: GeneratedDimProduct, storeId: string, date: Date, plan: IncidentPlan): boolean {
   if (product.productId !== plan.sparseProduct.productId) return false;
   return storeId !== plan.sparseProductStoreId || date < plan.sparseHistoryStart;
@@ -41,7 +49,7 @@ export function generateFactInventory(
           plan.affectedStoreIds.includes(store.storeId) &&
           plan.incidentDates.has(toIsoDate(date));
 
-        const isRandomStockout = rng() < 0.015;
+        const isRandomStockout = isWeekend(date) && rng() < 0.015;
         const unitsOnHand = (isIncidentStockout || isRandomStockout) ? 0 : randInt(rng, 15, 220);
         rows.push({
           productId: product.productId,
@@ -63,6 +71,7 @@ export function generateFactSales(
   stores: GeneratedDimStore[],
   inventory: GeneratedFactInventory[],
   plan: IncidentPlan,
+  marketFactor: number[],
 ): GeneratedFactSales[] {
   const stockoutKey = (productId: string, storeId: string, date: Date) =>
     `${productId}|${storeId}|${toIsoDate(date)}`;
@@ -79,7 +88,8 @@ export function generateFactSales(
         ? randInt(rng, 8, 25)
         : randInt(rng, 15, 60);
     for (const store of stores) {
-      for (const date of dates) {
+      for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
+        const date = dates[dateIndex];
         if (isSparseRow(product, store.storeId, date, plan)) continue;
         if (stockoutLookup.has(stockoutKey(product.productId, store.storeId, date))) {
           rows.push({
@@ -95,7 +105,13 @@ export function generateFactSales(
           continue;
         }
 
-        let units = baseUnits * weekdayMultiplier(date) * randRange(rng, 0.85, 1.15);
+        // Flat on weekdays ("straight line" Mon-Fri); all organic fluctuation
+        // (market-wide swings + per-cell noise + a weekend demand bump) is
+        // confined to Sat/Sun. The scripted incident below still perturbs a
+        // weekday if it lands on one — that's a real business event, not noise.
+        let units = isWeekend(date)
+          ? baseUnits * WEEKEND_SALES_MULTIPLIER * marketFactor[dateIndex] * randRange(rng, 0.85, 1.15)
+          : baseUnits;
 
         const isIncidentSoftness =
           store.channelType === "online" &&
@@ -122,8 +138,12 @@ export function generateFactSales(
 
         units = Math.max(0, Math.round(units));
         const grossRevenue = Math.round(units * product.price * 100) / 100;
-        const discountAmount = Math.round(grossRevenue * randRange(rng, 0.02, 0.08) * 100) / 100;
-        const returnsAmount = Math.round(grossRevenue * randRange(rng, 0.01, 0.03) * 100) / 100;
+        // Fixed rates on weekdays so discount/returns noise can't leak
+        // fluctuation into an otherwise flat weekday net-revenue line.
+        const discountRate = isWeekend(date) ? randRange(rng, 0.02, 0.08) : 0.05;
+        const returnsRate = isWeekend(date) ? randRange(rng, 0.01, 0.03) : 0.02;
+        const discountAmount = Math.round(grossRevenue * discountRate * 100) / 100;
+        const returnsAmount = Math.round(grossRevenue * returnsRate * 100) / 100;
         const costOfGoodsSold = Math.round(units * product.cost * 100) / 100;
 
         rows.push({
@@ -157,26 +177,35 @@ export function generateFactMarketingSpend(
   dates: Date[],
   campaigns: GeneratedDimCampaign[],
   plan: IncidentPlan,
+  marketFactor: number[],
 ): GeneratedFactMarketingSpend[] {
   const rows: GeneratedFactMarketingSpend[] = [];
-  
+
   // Clear any previous events
   randomCampaignEvents.clear();
 
   for (const campaign of campaigns) {
     const [min, max] = SPEND_RANGE_BY_CHANNEL[campaign.channel] ?? [500, 2000];
-    for (const date of dates) {
+    // Drawn once per campaign — a campaign has a stable typical daily budget
+    // in reality, not a freshly rerolled one every day.
+    const baseSpend = randRange(rng, min, max);
+    for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
+      const date = dates[dateIndex];
       if (campaign.campaignId === plan.delayedCampaign.campaignId && date >= plan.delayedSince) {
         continue; // simulates a stalled/delayed feed for the low-confidence scenario
       }
 
-      let spendAmount = randRange(rng, min, max) * weekdayMultiplier(date);
+      // Dampened vs. sales/traffic — ad budgets track demand loosely, not in lockstep.
+      const spendMarketFactor = 1 + (marketFactor[dateIndex] - 1) * 0.4;
+      let spendAmount = baseSpend * weekdayMultiplier(date) * spendMarketFactor * randRange(rng, 0.94, 1.06);
       const isIncidentDay = campaign.campaignId === plan.paidSearchCampaign.campaignId && plan.incidentDates.has(toIsoDate(date));
       
       if (isIncidentDay) {
         spendAmount *= 0.8; // the mandated 20% paid-search spend drop
-      } else if (campaign.channel === "paid_search") {
-        // Inject random marketing spend adjustments
+      } else if (campaign.channel === "paid_search" && isWeekend(date)) {
+        // Inject random marketing spend adjustments — weekend-only so this
+        // can't leak fluctuation into an otherwise flat weekday net revenue
+        // via the online-channel sales multiplier below.
         const r = rng();
         const dateStr = toIsoDate(date);
         if (r < 0.02) { // 2% chance of spend cut
@@ -214,13 +243,18 @@ export function generateFactWebTraffic(
   regions: readonly string[],
   channels: readonly string[],
   plan: IncidentPlan,
+  marketFactor: number[],
 ): GeneratedFactWebTraffic[] {
   const rows: GeneratedFactWebTraffic[] = [];
   for (const region of regions) {
     for (const channel of channels) {
       for (const device of DEVICES) {
-        for (const date of dates) {
-          let sessions = randInt(rng, 400, 3000) * weekdayMultiplier(date);
+        // Drawn once per cell — a channel/device/region has a stable typical
+        // traffic level in reality, not a freshly rerolled one every day.
+        const baseSessions = randInt(rng, 400, 3000);
+        for (let dateIndex = 0; dateIndex < dates.length; dateIndex++) {
+          const date = dates[dateIndex];
+          let sessions = baseSessions * weekdayMultiplier(date) * marketFactor[dateIndex] * randRange(rng, 0.94, 1.06);
           if (channel === "paid_search" && region === plan.incidentRegion && plan.incidentDates.has(toIsoDate(date))) {
             sessions *= 0.82; // fewer paid-search sessions from the spend cut
           }

@@ -15,6 +15,14 @@ export function createApp() {
   app.use(pinoHttp({ logger }));
   app.use(requestContext);
 
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", service: env.APP_NAME });
+  });
+
+  app.get("/", (_req, res) => {
+    res.json({ status: "ok", service: env.APP_NAME, docs: `${env.API_V1_PREFIX}/health` });
+  });
+
   app.use(env.API_V1_PREFIX, apiV1Router);
 
   app.use(errorHandler);

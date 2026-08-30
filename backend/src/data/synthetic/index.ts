@@ -7,7 +7,7 @@ import {
   generateFactWebTraffic,
 } from "./facts.js";
 import { buildIncidentPlan } from "./incidentPlan.js";
-import { createRng } from "./rng.js";
+import { createRng, generateMarketFactor } from "./rng.js";
 import { getDateRange, getDatasetStartDate, REGIONS, SEED, TOTAL_DAYS, toIsoDate } from "./scenario.js";
 import { generateSourceStatus } from "./sourceStatus.js";
 import type { ScenarioMeta, SyntheticDataset } from "./types.js";
@@ -27,10 +27,14 @@ export function generateSyntheticDataset(referenceDate: Date = new Date(), seed:
 
   const plan = buildIncidentPlan(startDate, dimProducts, dimStores, dimCampaigns);
 
+  // Shared across all products/regions/channels so their independent noise
+  // doesn't cancel out on aggregation — see generateMarketFactor's docstring.
+  const marketFactor = generateMarketFactor(rng, dates.length);
+
   const factInventory = generateFactInventory(rng, dates, dimProducts, dimStores, plan);
-  const factMarketingSpend = generateFactMarketingSpend(rng, dates, dimCampaigns, plan);
-  const factSales = generateFactSales(rng, dates, dimProducts, dimStores, factInventory, plan);
-  const factWebTraffic = generateFactWebTraffic(rng, dates, REGIONS, CHANNELS, plan);
+  const factMarketingSpend = generateFactMarketingSpend(rng, dates, dimCampaigns, plan, marketFactor);
+  const factSales = generateFactSales(rng, dates, dimProducts, dimStores, factInventory, plan, marketFactor);
+  const factWebTraffic = generateFactWebTraffic(rng, dates, REGIONS, CHANNELS, plan, marketFactor);
   const factShipments = generateFactShipments(rng, dates, REGIONS);
   const sourceStatus = generateSourceStatus(rng, datasetEndDate, plan);
 

@@ -8,6 +8,7 @@ import { Sun, Moon, User, LogOut, ChevronDown } from "lucide-react";
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/insights", label: "Insights" },
+  { to: "/prototype", label: "Video Demo 🎬" },
 ];
 
 function formatPersona(persona?: string): string {

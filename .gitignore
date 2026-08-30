@@ -28,6 +28,9 @@ phase*.md
 phase (1).md
 *.excalidraw
 
+# Documentation
+docs/
+
 # Frontend
 frontend/.env
 frontend/.env.local

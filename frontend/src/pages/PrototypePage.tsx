@@ -7,14 +7,11 @@ import {
   SkipForward,
   SkipBack,
   AlertTriangle,
-  TrendingDown,
   Sparkles,
   ShieldCheck,
-  BarChart3,
   Database,
   Cpu,
   FileText,
-  ChevronRight,
   Maximize2,
   Minimize2,
   ArrowRight,
@@ -73,7 +70,7 @@ interface PrototypeData {
   scene7_driverContribution: { totalChange: number; explainedImpact: number; residualImpact: number; breakdown: Array<{ name: string; impact: number; percent: number; color: string }> };
   scene8_confidenceAndMateriality: { factors: { evidenceStrength: number; dataQualityScore: number; modelFitScore: number; causalConfirmation: number; freshnessScore: number }; confidenceScore: number; confidenceLabel: string; materialityScore: number; materialityLevel: string };
   scene9_safetyAbstention: { shouldAbstain: boolean; checkedRules: Array<{ rule: string; status: string; val: string }> };
-  scene10_evidencePack: { anomaly: any; drivers: any[]; recommendedActions: any[] };
+  scene10_evidencePack: { anomaly: Record<string, unknown>; drivers: Array<Record<string, unknown>>; recommendedActions: Array<Record<string, unknown>> };
   scene11_llmExplanation: { narrativeText: string; status: string; source: string };
   scene12_finalInsight: { title: string; kpi: string; period: string; actual: string; expected: string; delta: string; primaryDriver: string; secondaryDriver: string; confidence: string; materiality: string; recommendedAction: string; ownerPersona: string };
 }

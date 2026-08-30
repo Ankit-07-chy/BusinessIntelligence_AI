@@ -1,36 +1,26 @@
 import { Router } from "express";
-import { prisma as defaultPrisma } from "../../db/prismaClient.js";
-import { computeBaseline } from "../../analytics/baseline.js";
-import { detectAnomaly } from "../../analytics/anomalyDetection.js";
-import { computeDataQualityScore, computeFreshnessScore } from "../../analytics/dataQuality.js";
-import { getStockoutDriverCandidate, getPaidSearchDriverCandidate } from "../../services/netRevenueDrivers.js";
-import { computeDriverContributions } from "../../analytics/contribution.js";
-import { computeBusinessImpactScore, computeMaterialityScore, computeStatisticalScore } from "../../analytics/materiality.js";
-import { computeConfidenceScore, classifyConfidence } from "../../analytics/confidence.js";
-import { rankDrivers } from "../../analytics/ranking.js";
-import { shouldAbstain } from "../../analytics/abstention.js";
-import { mapDriverToAction } from "../../services/actionMapping.js";
-import { buildEvidencePack } from "../../llm/evidencePack.js";
 import { getKpiTimeseries } from "../../services/kpiService.js";
 
 export const prototypeRouter = Router();
 
 prototypeRouter.get("/prototype/demo-data", async (_req, res) => {
   try {
-    // Attempt live computation if DB is available
-    let series = await getKpiTimeseries("net_revenue", { allowedRegions: ["ALL"] }).catch(() => null);
+    // Check if live series data is reachable
+    const series = await getKpiTimeseries("net_revenue", { allowedRegions: ["ALL"] }).catch(() => null);
+    const hasLiveSeries = Array.isArray(series) && series.length > 0;
     
-    // Default synthetic scenario fallback matching the actual engine output
+    // Synthetic scenario data matching the actual engine output
     const fallbackData = {
       scenario: {
         kpiId: "net_revenue",
         kpiName: "Net Revenue",
         targetDate: "2026-08-15",
-        currency: "USD"
+        currency: "USD",
+        hasLiveSeries
       },
       scene1_businessData: {
         sales: { grossRevenue: 520000, discountAmount: 60000, returnsAmount: 40000, netRevenue: 420000, orderCount: 4200 },
-        inventory: { productsTracked: 140, totalStores: 12, activeStockouts: 3, topStockoutSku: "SKU-ELEC-101 (Top-selling 4K Monitor)" },
+        inventory: { productsTracked: 140, totalStores: 12, activeStockouts: 3, topStockoutSku: "SKU-ELEC-101 (Top 4K Monitor)" },
         marketing: { activeCampaigns: 8, channel: "paid_search", spendCutPercent: 20, spendCutUsd: 18000 }
       },
       scene2_kpiCalculation: {

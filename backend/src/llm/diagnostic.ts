@@ -13,9 +13,10 @@ async function run() {
     });
     console.log("SUCCESS: LLM client is configured and verified successfully!");
     console.log("Response payload:", JSON.stringify(raw));
-  } catch (err: any) {
+  } catch (err) {
     console.error("DIAGNOSTICS_FAILED: API returned an error:");
-    console.error(err.message || err);
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(message);
   }
 }
 

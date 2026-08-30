@@ -50,7 +50,7 @@ async function callGroq(input: StructuredCallInput): Promise<unknown> {
     throw new Error(`Groq API returned status ${response.status}: ${errorText}`);
   }
 
-  const data = (await response.json()) as any;
+  const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error("Groq API returned an empty response.");
 

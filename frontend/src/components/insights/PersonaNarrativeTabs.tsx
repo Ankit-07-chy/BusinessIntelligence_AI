@@ -3,14 +3,6 @@ import { api, getRestrictionMessage } from "../../lib/api";
 import { PERSONA_IDS, type Explanation, type PersonaId } from "../../lib/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
-const PERSONA_LABELS: Record<PersonaId, string> = {
-  cfo: "CFO",
-  supply_chain_manager: "Supply Chain",
-  marketing_manager: "Marketing",
-  analyst: "Analyst",
-  digital_product_manager: "Digital Product",
-};
-
 const PERSONA_FULL_NAMES: Record<PersonaId, string> = {
   cfo: "Chief Financial Officer",
   supply_chain_manager: "Supply Chain Manager",
